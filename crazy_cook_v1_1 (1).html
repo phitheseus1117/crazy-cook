@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crazy COOK! 美式快餐派對廚房 V1.1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --diner-red: #E63946;
+      --diner-cream: #FDF6E3;
+      --diner-yellow: #FFB703;
+      --diner-teal: #2A9D8F;
+      --diner-ink: #1E1E1E;
+    }
+
+    body {
+      font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+      background-color: var(--diner-cream);
+      color: var(--diner-ink);
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    /* 美式餐車黑白棋盤格裝飾 */
+    .checkerboard-sm {
+      background-color: #ffffff;
+      background-image:
+        linear-gradient(45deg, #1E1E1E 25%, transparent 25%),
+        linear-gradient(-45deg, #1E1E1E 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1E1E1E 75%),
+        linear-gradient(-45deg, transparent 75%, #1E1E1E 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    }
+
+    /* 普普風粗黑邊框與立體陰影 */
+    .pop-card {
+      border: 4px solid #1E1E1E;
+      box-shadow: 6px 6px 0px #1E1E1E;
+    }
+
+    .pop-card-lg {
+      border: 5px solid #1E1E1E;
+      box-shadow: 10px 10px 0px #1E1E1E;
+    }
+
+    .pop-btn {
+      border: 4px solid #1E1E1E;
+      box-shadow: 5px 5px 0px #1E1E1E;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
+    }
+
+    .pop-btn:hover:not(:disabled) {
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0px #1E1E1E;
+    }
+
+    .pop-btn:active:not(:disabled) {
+      transform: translate(3px, 3px);
+      box-shadow: 2px 2px 0px #1E1E1E;
+    }
+
+    .pop-btn:disabled {
+      opacity: 0.52;
+      cursor: not-allowed;
+    }
+
+    /* 霓虹招牌字體效果 */
+    .neon-title {
+      text-shadow:
+        3px 3px 0px #1E1E1E,
+        -2px -2px 0px #1E1E1E,
+        2px -2px 0px #1E1E1E,
+        -2px 2px 0px #1E1E1E,
+        0 0 18px rgba(255, 183, 3, 0.85);
+    }
+
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px) rotate(-1.5deg); }
+      50% { transform: translateY(-6px) rotate(1.5deg); }
+    }
+
+    .animate-float {
+      animation: floatSlow 3.2s ease-in-out infinite;
+    }
+
+    @keyframes pulseFast {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    .animate-pulse-fast {
+      animation: pulseFast 0.75s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#FDF6E3] relative">
+
+  <!-- 頂部美式餐車霓虹導覽列 -->
+  <header class="w-full bg-[#E63946] border-b-4 border-[#1E1E1E] px-4 py-2.5 flex items-center justify-between z-30">
+    <div class="flex items-center gap-2.5 cursor-pointer" onclick="goHome()">
+      <!-- 自繪 SVG 漢堡 Logo 徽章 -->
+      <div class="bg-[#FFB703] border-3 border-[#1E1E1E] rounded-xl p-1.5 shadow-[2px_2px_0px_#1E1E1E] flex items-center justify-center">
+        <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 28C10 16 20 10 32 10C44 10 54 16 54 28H10Z" fill="#F4A261" stroke="#1E1E1E" stroke-width="4" stroke-linejoin="round"/>
+          <circle cx="24" cy="18" r="2" fill="#FDF6E3"/>
+          <circle cx="33" cy="15" r="2" fill="#FDF6E3"/>
+          <circle cx="41" cy="19" r="2" fill="#FDF6E3"/>
+          <path d="M8 33C13 30 18 36 24 33C30 30 35 36 41 33C47 30 52 35 56 33" stroke="#2A9D8F" stroke-width="5" stroke-linecap="round"/>
+          <rect x="9" y="38" width="46" height="8" rx="4" fill="#6F3722" stroke="#1E1E1E" stroke-width="4"/>
+          <path d="M12 46H52C52 52 46 55 32 55C18 55 12 52 12 46Z" fill="#F4A261" stroke="#1E1E1E" stroke-width="4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <span class="font-black text-white text-lg sm:text-2xl tracking-wider drop-shadow-[2px_2px_0px_#1E1E1E]">CRAZY COOK</span>
+        <span class="hidden sm:inline-block ml-2 text-xs font-black bg-[#1E1E1E] text-[#FFB703] px-2.5 py-0.5 rounded-full">AMERICAN DINER</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button onclick="openHelpModal()" class="pop-btn bg-[#FDF6E3] hover:bg-[#FFB703] text-[#1E1E1E] font-black text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E1E1E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <span>玩法說明</span>
+      </button>
+      <button id="sound-toggle-btn" onclick="toggleMute()" class="pop-btn bg-[#2A9D8F] text-white font-black text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+        <span id="sound-svg-slot" class="flex items-center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+        </span>
+        <span class="hidden sm:inline" id="sound-label">音效開</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 棋盤格裝飾邊條 -->
+  <div class="w-full h-3.5 checkerboard-sm border-b-4 border-[#1E1E1E]"></div>
+
+  <!-- 全局 Toast 訊息條 -->
+  <div id="toast-banner" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-200">
+    <div id="toast-text" class="pop-card bg-[#FFB703] text-[#1E1E1E] font-black px-5 py-2.5 rounded-2xl text-sm sm:text-base whitespace-nowrap">
+      系統提示
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- 第一層：主界面 (MAIN MENU) -->
+  <!-- ========================================================= -->
+  <main id="screen-home" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
+    <!-- 背景向量裝飾插畫 -->
+    <div class="hidden lg:block absolute top-14 left-12 opacity-30 -rotate-12 pointer-events-none">
+      <svg width="84" height="84" viewBox="0 0 64 64" fill="none">
+        <path d="M16 26L20 56H44L48 26H16Z" fill="#E63946" stroke="#1E1E1E" stroke-width="4" stroke-linejoin="round"/>
+        <rect x="20" y="10" width="5" height="16" rx="2" fill="#FFB703" stroke="#1E1E1E" stroke-width="3"/>
+        <rect x="29" y="7" width="5" height="19" rx="2" fill="#FFB703" stroke="#1E1E1E" stroke-width="3"/>
+        <rect x="38" y="11" width="5" height="15" rx="2" fill="#FFB703" stroke="#1E1E1E" stroke-width="3"/>
+      </svg>
+    </div>
+    <div class="hidden lg:block absolute bottom-14 right-14 opacity-30 rotate-12 pointer-events-none">
+      <svg width="84" height="84" viewBox="0 0 64 64" fill="none">
+        <path d="M20 22H44L41 56H23L20 22Z" fill="#2A9D8F" stroke="#1E1E1E" stroke-width="4" stroke-linejoin="round"/>
+        <rect x="17" y="17" width="30" height="5" rx="2" fill="#FDF6E3" stroke="#1E1E1E" stroke-width="3"/>
+        <path d="M34 17L39 6" stroke="#E63946" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="max-w-3xl w-full flex flex-col items-center text-center">
+      <!-- 美式復古霓虹看板 -->
+      <div class="pop-card-lg bg-[#E63946] rounded-3xl px-6 sm:px-12 py-6 sm:py-8 mb-6 relative animate-float">
+        <div class="inline-block bg-[#1E1E1E] text-[#FFB703] font-black text-xs sm:text-sm px-4 py-1 rounded-full tracking-widest mb-2">
+          ★ EST. 1955 • ROUTE 66 DINER ★
+        </div>
+        <h1 class="text-5xl sm:text-7xl font-black text-[#FFB703] neon-title tracking-tight leading-none">
+          Crazy COOK
+        </h1>
+        <p class="text-white font-black text-lg sm:text-2xl mt-2 drop-shadow-[2px_2px_0px_#1E1E1E]">
+          美式快餐大作戰 • 限時出餐派對！
+        </p>
+        <!-- 四角鉚釘 -->
+        <span class="w-3 h-3 rounded-full bg-[#FDF6E3] border-2 border-[#1E1E1E] absolute top-3 left-3"></span>
+        <span class="w-3 h-3 rounded-full bg-[#FDF6E3] border-2 border-[#1E1E1E] absolute top-3 right-3"></span>
+        <span class="w-3 h-3 rounded-full bg-[#FDF6E3] border-2 border-[#1E1E1E] absolute bottom-3 left-3"></span>
+        <span class="w-3 h-3 rounded-full bg-[#FDF6E3] border-2 border-[#1E1E1E] absolute bottom-3 right-3"></span>
+      </div>
+
+      <!-- 主廚代號與最高紀錄列 -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-7 w-full max-w-2xl">
+        <div class="pop-card bg-white rounded-2xl px-4 py-2.5 flex items-center justify-center gap-2.5 flex-1 w-full">
+          <!-- 向量廚師帽圖標 -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E1E1E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" fill="#FFB703"/>
+            <line x1="6" y1="17" x2="18" y2="17"/>
+          </svg>
+          <span class="font-black text-sm text-[#1E1E1E] whitespace-nowrap">主廚代號：</span>
+          <input id="player-name-input" type="text" maxlength="10" value="漢堡小當家"
+            class="border-2 border-[#1E1E1E] bg-[#FDF6E3] rounded-xl px-3 py-1 font-bold text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#E63946] w-36 text-center" />
+        </div>
+
+        <div class="pop-card bg-[#1E1E1E] text-white rounded-2xl px-4 py-2.5 flex items-center justify-center gap-2">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFB703" stroke="#FFB703" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <span class="text-xs font-black text-gray-300">最高營業額：</span>
+          <span id="home-best-score" class="text-lg font-black text-[#FFB703]">$0</span>
+        </div>
+      </div>
+
+      <!-- 遊玩模式雙卡片：單人遊玩 vs 多人遊玩 (上限4人) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full max-w-2xl">
+        <!-- 單人遊玩卡片 -->
+        <button onclick="selectSinglePlayer()" class="pop-btn bg-[#2A9D8F] hover:bg-[#23887c] rounded-3xl p-6 text-left flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-3">
+            <div class="bg-white border-3 border-[#1E1E1E] rounded-2xl p-2.5 shadow-[3px_3px_0px_#1E1E1E]">
+              <!-- 單人主廚向量插畫 -->
+              <svg width="42" height="42" viewBox="0 0 64 64" fill="none">
+                <circle cx="32" cy="38" r="16" fill="#FFD166" stroke="#1E1E1E" stroke-width="4"/>
+                <path d="M18 24C14 24 12 19 16 15C18 9 26 7 32 10C38 7 46 9 48 15C52 19 50 24 46 24H18Z" fill="#FFFFFF" stroke="#1E1E1E" stroke-width="4" stroke-linejoin="round"/>
+                <circle cx="27" cy="36" r="2.5" fill="#1E1E1E"/>
+                <circle cx="37" cy="36" r="2.5" fill="#1E1E1E"/>
+                <path d="M27 43C29 46 35 46 37 43" stroke="#1E1E1E" stroke-width="3.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="bg-[#1E1E1E] text-white font-black text-xs px-3 py-1 rounded-full tracking-wider">1 PLAYER</span>
+          </div>
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-[#1E1E1E] mb-1">單人遊玩</h2>
+            <p class="text-sm font-bold text-[#1E1E1E]/90">獨自挑戰快餐尖峰時刻，展現神級出餐手速！</p>
+          </div>
+          <div class="mt-4 inline-flex items-center gap-1.5 font-black text-sm bg-white border-3 border-[#1E1E1E] px-3.5 py-1.5 rounded-xl self-start">
+            <span>進入準備室</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E1E1E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
+        </button>
+
+        <!-- 多人遊玩卡片 -->
+        <button onclick="selectMultiplayer()" class="pop-btn bg-[#FFB703] hover:bg-[#f2aa00] rounded-3xl p-6 text-left flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-3">
+            <div class="bg-white border-3 border-[#1E1E1E] rounded-2xl p-2.5 shadow-[3px_3px_0px_#1E1E1E]">
+              <!-- 多人主廚團隊向量插畫 -->
+              <svg width="42" height="42" viewBox="0 0 64 64" fill="none">
+                <circle cx="22" cy="40" r="13" fill="#E63946" stroke="#1E1E1E" stroke-width="3.5"/>
+                <path d="M12 29H32L30 20H14L12 29Z" fill="#FFFFFF" stroke="#1E1E1E" stroke-width="3.5" stroke-linejoin="round"/>
+                <circle cx="42" cy="40" r="13" fill="#2A9D8F" stroke="#1E1E1E" stroke-width="3.5"/>
+                <path d="M32 29H52L50 20H34L32 29Z" fill="#FFFFFF" stroke="#1E1E1E" stroke-width="3.5" stroke-linejoin="round"/>
+                <circle cx="19" cy="39" r="2" fill="#1E1E1E"/><circle cx="25" cy="39" r="2" fill="#1E1E1E"/>
+                <circle cx="39" cy="39" r="2" fill="#1E1E1E"/><circle cx="45" cy="39" r="2" fill="#1E1E1E"/>
+              </svg>
+            </div>
+            <span class="bg-[#E63946] text-white border-2 border-[#1E1E1E] font-black text-xs px-3 py-1 rounded-full tracking-wider">2 - 4 PLAYERS</span>
+          </div>
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-[#1E1E1E] mb-1">多人遊玩</h2>
+            <p class="text-sm font-bold text-[#1E1E1E]/90">最多 4 人協力合作！創立房間或輸入密碼連線開煮。</p>
+          </div>
+          <div class="mt-4 inline-flex items-center gap-1.5 font-black text-sm bg-white border-3 border-[#1E1E1E] px-3.5 py-1.5 rounded-xl self-start">
+            <span>創立 / 加入房間</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E1E1E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================= -->
+  <!-- 第二層：多人遊戲大廳 - 創立房間 / 輸入房間密碼 -->
+  <!-- ========================================================= -->
+  <section id="screen-multiplayer-hub" class="hidden flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+    <div class="max-w-4xl w-full">
+      <div class="flex items-center justify-between mb-6">
+        <button onclick="goHome()" class="pop-btn bg-white hover:bg-gray-100 px-4 py-2 rounded-xl font-black text-sm flex items-center gap-1.5">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E1E1E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          <span>返回主界面</span>
+        </button>
+        <div class="bg-[#1E1E1E] text-[#FFB703] font-black px-4 py-1.5 rounded-full text-xs sm:text-sm">
+          MULTIPLAYER LOBBY • 上限 4 人
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- 左側卡片：創立房間 -->
+        <div class="pop-card-lg bg-white rounded-3xl p-6 sm:p-7 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-3 mb-5">
+              <div class="bg-[#E63946] text-white border-3 border-[#1E1E1E] rounded-2xl p-2.5 shadow-[3px_3px_0px_#1E1E1E]">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-2xl font-black text-[#1E1E1E]">創立新房間</h2>
+                <p class="text-xs font-bold text-gray-500">CREATE NEW DINER ROOM</p>
+              </div>
+            </div>
+
+            <!-- 房間人數上限選擇 (2~4人) -->
+            <div class="mb-4">
+              <label class="block font-black text-sm mb-2">房間人數上限（最多 4 人）：</label>
+              <div class="grid grid-cols-3 gap-2.5" id="max-players-selector">
+                <button type="button" onclick="setRoomCapacity(2)" data-cap="2" class="cap-btn pop-btn bg-[#FDF6E3] py-2.5 rounded-xl font-black text-base">2 人</button>
+                <button type="button" onclick="setRoomCapacity(3)" data-cap="3" class="cap-btn pop-btn bg-[#FDF6E3] py-2.5 rounded-xl font-black text-base">3 人</button>
+                <button type="button" onclick="setRoomCapacity(4)" data-cap="4" class="cap-btn pop-btn bg-[#FFB703] py-2.5 rounded-xl font-black text-base">4 人滿編</button>
+              </div>
+            </div>
+
+            <!-- 營業時間長短選擇 -->
+            <div class="mb-6">
+              <label class="block font-black text-sm mb-2">選擇營業時段：</label>
+              <select id="diner-shift-select" class="w-full border-3 border-[#1E1E1E] bg-[#FDF6E3] rounded-xl px-3.5 py-2.5 font-bold text-sm focus:outline-none">
+                <option value="90">午間尖峰時段（限時 90 秒）</option>
+                <option value="120">宵夜狂熱派對（限時 120 秒）</option>
+              </select>
+            </div>
+          </div>
+
+          <button onclick="createRoom()" class="pop-btn w-full bg-[#E63946] hover:bg-[#d32f3c] text-white font-black text-lg py-3.5 rounded-2xl flex items-center justify-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>立即建立房間並生成密碼</span>
+          </button>
+        </div>
+
+        <!-- 右側卡片：輸入房間密碼 -->
+        <div class="pop-card-lg bg-[#2A9D8F] rounded-3xl p-6 sm:p-7 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-3 mb-5">
+              <div class="bg-[#FFB703] text-[#1E1E1E] border-3 border-[#1E1E1E] rounded-2xl p-2.5 shadow-[3px_3px_0px_#1E1E1E]">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1E1E1E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-2xl font-black text-[#1E1E1E]">輸入房間密碼加入</h2>
+                <p class="text-xs font-bold text-[#1E1E1E]/80">JOIN WITH 4-DIGIT ROOM CODE</p>
+              </div>
+            </div>
+
+            <p class="text-sm font-bold text-[#1E1E1E] mb-3">
+              請輸入房主提供的 <span class="underline decoration-2">4 位數字房間密碼</span>：
+            </p>
+
+            <!-- 4位數密碼輸入框 -->
+            <div class="bg-white border-4 border-[#1E1E1E] rounded-2xl p-4 mb-4 shadow-[4px_4px_0px_#1E1E1E]">
+              <input id="join-code-input" type="text" inputmode="numeric" maxlength="4" placeholder="例如：5888"
+                class="w-full text-center text-3xl sm:text-4xl font-black tracking-[0.4em] text-[#1E1E1E] bg-transparent focus:outline-none" />
+            </div>
+
+            <!-- 單機測試快速填入鈕 -->
+            <div class="bg-[#FDF6E3] border-3 border-[#1E1E1E] rounded-xl p-3 mb-5 flex items-center justify-between gap-2">
+              <span class="text-xs font-bold text-[#1E1E1E]">單人測試沒有房號？</span>
+              <button type="button" onclick="fillDemoRoomCode()" class="bg-[#FFB703] border-2 border-[#1E1E1E] px-3 py-1 rounded-lg font-black text-xs hover:bg-[#f2aa00]">
+                填入測試房號 #5888
+              </button>
+            </div>
+          </div>
+
+          <button onclick="joinRoomWithCode()" class="pop-btn w-full bg-[#1E1E1E] hover:bg-[#2d2f45] text-[#FFB703] font-black text-lg py-3.5 rounded-2xl flex items-center justify-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            <span>加入廚房房間</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 第三層：玩家準備大廳 (READY ROOM) -->
+  <!-- ========================================================= -->
+  <section id="screen-ready-room" class="hidden flex-1 flex flex-col items-center justify-center p-4 sm:p-6">
+    <div class="max-w-4xl w-full">
+      <!-- 頂部房間資訊列 -->
+      <div class="pop-card bg-white rounded-2xl p-4 mb-5 flex flex-wrap items-center justify-between gap-3">
+        <button onclick="leaveReadyRoom()" class="pop-btn bg-[#FDF6E3] px-3.5 py-1.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1E1E1E" stroke-width="3"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>離開房間</span>
+        </button>
+
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+          <span id="ready-mode-badge" class="bg-[#2A9D8F] text-white border-2 border-[#1E1E1E] font-black text-xs sm:text-sm px-3 py-1 rounded-full">
+            多人連線模式 (1/4 位主廚已連線)
+          </span>
+          <div id="room-code-box" class="flex items-center gap-2 bg-[#FFB703] border-3 border-[#1E1E1E] px-3.5 py-1 rounded-xl">
+            <span class="text-xs font-black">房間密碼：</span>
+            <span id="display-room-code" class="text-lg sm:text-xl font-black tracking-widest">#4829</span>
+            <button onclick="copyRoomCode()" class="bg-white border-2 border-[#1E1E1E] text-xs font-black px-2.5 py-0.5 rounded-lg hover:bg-gray-100">
+              複製
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Demo 展示模擬器工具列 -->
+      <div id="demo-simulator-bar" class="pop-card bg-[#FDF6E3] border-dashed rounded-2xl p-3.5 mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="bg-[#E63946] text-white font-black text-xs px-2.5 py-1 rounded-lg border-2 border-[#1E1E1E]">DEMO 模擬器</div>
+          <span class="text-xs sm:text-sm font-bold text-[#1E1E1E]">單人試用或課堂展示時，可一鍵模擬夥伴加入與按下準備！</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="simulateAddBot()" class="pop-btn bg-[#2A9D8F] text-white text-xs font-black px-3 py-1.5 rounded-xl">
+            + 模擬夥伴加入
+          </button>
+          <button onclick="simulateToggleBotsReady()" class="pop-btn bg-[#FFB703] text-[#1E1E1E] text-xs font-black px-3 py-1.5 rounded-xl">
+            一鍵切換夥伴準備狀態
+          </button>
+          <button onclick="simulateClearBots()" class="pop-btn bg-white text-[#1E1E1E] text-xs font-black px-3 py-1.5 rounded-xl">
+            清空模擬夥伴
+          </button>
+        </div>
+      </div>
+
+      <!-- 4位主廚席次卡片網格 -->
+      <div id="player-slots-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <!-- 由 JS 渲染 SVG 廚師頭像與準備狀態 -->
+      </div>
+
+      <!-- 底部開局確認區 -->
+      <div class="pop-card-lg bg-[#1E1E1E] text-white rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <p id="ready-status-summary" class="text-base sm:text-lg font-black text-[#FFB703]">
+            目前準備進度：0 / 1 位玩家已準備
+          </p>
+          <p id="ready-rule-hint" class="text-xs font-bold text-gray-300 mt-0.5">
+            必須所有在場玩家皆確認「準備完成」後，才可正式開始營業！
+          </p>
+        </div>
+
+        <button id="start-game-btn" onclick="triggerGameStart()" disabled
+          class="pop-btn w-full sm:w-auto bg-[#E63946] text-white font-black text-lg sm:text-xl px-8 py-3.5 rounded-2xl flex items-center justify-center gap-2">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="#1E1E1E" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span>開始營業！</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3-2-1 倒數遮罩 -->
+    <div id="countdown-overlay" class="hidden fixed inset-0 bg-[#1E1E1E]/85 z-50 flex flex-col items-center justify-center">
+      <div class="pop-card-lg bg-[#FFB703] rounded-full w-40 h-40 flex items-center justify-center mb-4 animate-bounce">
+        <span id="countdown-number" class="text-7xl font-black text-[#1E1E1E]">3</span>
+      </div>
+      <p class="text-white font-black text-2xl tracking-wider">廚房爐火預熱中，準備出餐！</p>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 第四層：實際可遊玩的快餐廚房關卡 (GAMEPLAY SCREEN) -->
+  <!-- ========================================================= -->
+  <section id="screen-game" class="hidden flex-1 flex flex-col p-2 sm:p-4 max-w-6xl w-full mx-auto">
+    <!-- 頂部 HUD：訂單欄 + 營業額 + 連擊 + 剩餘時間 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 mb-2.5">
+      <!-- 顧客訂單欄 (佔 7 欄) -->
+      <div class="lg:col-span-7 pop-card bg-white rounded-2xl p-2.5 flex items-center gap-2.5 overflow-x-auto min-h-[96px]" id="orders-rail">
+        <!-- 動態訂單票券 -->
+      </div>
+
+      <!-- 計分、連擊與倒數計時 (佔 5 欄) -->
+      <div class="lg:col-span-5 pop-card bg-[#1E1E1E] text-white rounded-2xl p-2.5 flex items-center justify-between gap-2">
+        <div class="bg-[#2A9D8F] text-[#1E1E1E] border-2 border-white rounded-xl px-2.5 py-1.5 flex-1 text-center">
+          <div class="text-[11px] font-black">今日營業額</div>
+          <div id="hud-score" class="text-xl sm:text-2xl font-black">$0</div>
+        </div>
+        <div class="bg-[#E63946] text-white border-2 border-white rounded-xl px-2.5 py-1.5 text-center min-w-[68px]">
+          <div class="text-[11px] font-black">COMBO</div>
+          <div id="hud-combo" class="text-xl sm:text-2xl font-black">x1</div>
+        </div>
+        <div class="bg-[#FFB703] text-[#1E1E1E] border-2 border-white rounded-xl px-2.5 py-1.5 flex-1 text-center">
+          <div class="text-[11px] font-black">剩餘時間</div>
+          <div id="hud-timer" class="text-xl sm:text-2xl font-black">90s</div>
+        </div>
+        <button onclick="endGameEarly()" class="bg-white hover:bg-gray-200 text-[#1E1E1E] font-black text-xs px-2.5 py-2.5 rounded-xl border-2 border-[#1E1E1E]">
+          結算
+        </button>
+      </div>
+    </div>
+
+    <!-- 廚房主畫布區域 -->
+    <div class="flex-1 pop-card-lg bg-[#2B2D42] rounded-2xl p-2 relative min-h-[390px] sm:min-h-[460px] flex flex-col">
+      <canvas id="kitchen-canvas" class="w-full h-full rounded-xl block touch-none"></canvas>
+
+      <!-- 操作提示列 -->
+      <div class="mt-2 bg-[#FDF6E3] border-2 border-[#1E1E1E] rounded-xl px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs font-bold">
+        <div class="flex items-center gap-2">
+          <span class="bg-[#E63946] text-white px-2 py-0.5 rounded-md font-black">操作方式</span>
+          <span>直接<b>點擊或觸控</b>廚房工作台即可自動走過去拿取或料理！</span>
+        </div>
+        <div class="hidden sm:flex items-center gap-3 text-[#1E1E1E]/85">
+          <span>P1 鍵盤：<b>WASD</b> 移動 + <b>空白鍵</b> 互動</span>
+          <span id="p2-control-hint" class="hidden">｜ P2 鍵盤：<b>方向鍵</b> + <b>Enter</b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 第五層：營業結算畫面 (END-OF-SHIFT SUMMARY) -->
+  <!-- ========================================================= -->
+  <section id="screen-results" class="hidden flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+    <div class="pop-card-lg bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full text-center">
+      <div class="inline-block bg-[#E63946] text-white font-black text-xs px-4 py-1 rounded-full border-2 border-[#1E1E1E] mb-2">
+        SHIFT COMPLETE • 打烊結算
+      </div>
+      <h2 class="text-3xl sm:text-4xl font-black text-[#1E1E1E] mb-2">今日營業成績單</h2>
+
+      <!-- 向量評價徽章 -->
+      <div id="result-rank-badge" class="my-3 flex flex-col items-center">
+        <div class="w-24 h-24 rounded-full bg-[#FFB703] border-4 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] flex items-center justify-center text-5xl font-black text-[#1E1E1E]">
+          S
+        </div>
+      </div>
+      <p id="result-rank-title" class="font-black text-lg text-[#E63946] mb-5">五星級美式漢堡傳奇！</p>
+
+      <div class="bg-[#FDF6E3] border-3 border-[#1E1E1E] rounded-2xl p-4 mb-6 space-y-2.5 text-left font-bold">
+        <div class="flex justify-between items-center border-b-2 border-dashed border-gray-300 pb-2">
+          <span>總營業額（含連擊小費）：</span>
+          <span id="res-score" class="text-2xl font-black text-[#2A9D8F]">$0</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span>成功出餐數：</span>
+          <span id="res-completed" class="font-black text-[#1E1E1E]">0 份</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span>最高連擊紀錄：</span>
+          <span id="res-max-combo" class="font-black text-[#FFB703] bg-[#1E1E1E] px-2 py-0.5 rounded-md">x1</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span>逾時取消訂單：</span>
+          <span id="res-missed" class="font-black text-[#E63946]">0 份</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="replayCurrentMode()" class="pop-btn bg-[#FFB703] hover:bg-[#f2aa00] text-[#1E1E1E] font-black py-3 rounded-2xl text-base">
+          再玩一局
+        </button>
+        <button onclick="goHome()" class="pop-btn bg-[#2A9D8F] hover:bg-[#23887c] text-white font-black py-3 rounded-2xl text-base">
+          回到主選單
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 玩法說明彈窗 (HOW TO PLAY MODAL) -->
+  <!-- ========================================================= -->
+  <div id="help-modal" class="hidden fixed inset-0 bg-[#1E1E1E]/75 z-50 flex items-center justify-center p-4">
+    <div class="pop-card-lg bg-[#FDF6E3] rounded-3xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b-4 border-[#1E1E1E] pb-3 mb-4">
+        <h3 class="text-2xl font-black text-[#1E1E1E]">Crazy COOK 廚房操作指南</h3>
+        <button onclick="closeHelpModal()" class="pop-btn bg-[#E63946] text-white font-black px-3.5 py-1 rounded-xl text-sm">關閉</button>
+      </div>
+
+      <div class="space-y-4 text-sm font-bold text-[#1E1E1E]">
+        <div class="bg-white border-3 border-[#1E1E1E] rounded-2xl p-4">
+          <h4 class="font-black text-base text-[#E63946] mb-1">1. 遊戲目標與連擊獎勵</h4>
+          <p>依照上方「訂單欄」的顧客漢堡需求，將對應配料放到「漢堡組裝台」疊好後，端去「出餐窗口」即可賺取營業額！連續成功出餐會累積 <b>COMBO 倍數</b>，分數翻倍！</p>
+        </div>
+
+        <div class="bg-white border-3 border-[#1E1E1E] rounded-2xl p-4">
+          <h4 class="font-black text-base text-[#2A9D8F] mb-2">2. 三大招牌漢堡食譜</h4>
+          <ul class="space-y-2 list-disc pl-5">
+            <li><b>經典起司堡（$120）：</b>【漢堡麵包】 + 【煎熟肉排】 + 【起司片】</li>
+            <li><b>田園鮮蔬堡（$140）：</b>【漢堡麵包】 + 【切碎生菜】 + 【新鮮番茄】</li>
+            <li><b>美式總匯滿漢堡（$180）：</b>【漢堡麵包】 + 【煎熟肉排】 + 【切碎生菜】 + 【起司片】 + 【新鮮番茄】</li>
+          </ul>
+        </div>
+
+        <div class="bg-white border-3 border-[#1E1E1E] rounded-2xl p-4">
+          <h4 class="font-black text-base text-[#FFB703] mb-1">3. 料理設備使用方式</h4>
+          <p>• <b>煎台（Grill）：</b>放入「生肉排」後自動煎烤（約 4 秒熟透變金黃色）；若放太久會燒焦，燒焦需拿去「垃圾桶」丟掉。</p>
+          <p class="mt-1">• <b>砧板（Cutting Board）：</b>放入「整顆生菜」後，連續點擊砧板（或按空白鍵）3 下即可切碎。</p>
+          <p class="mt-1">• <b>操作控制：</b>可直接用滑鼠或手指點擊工作台自動走過去互動，也支援鍵盤 WASD + 空白鍵。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // 1. Web Audio API 復古街機與廚房音效合成器（無外部音檔）
+    // =========================================================
+    let audioCtx = null;
+    let isMuted = false;
+
+    const SVG_SOUND_ON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`;
+    const SVG_SOUND_OFF = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      document.getElementById('sound-svg-slot').innerHTML = isMuted ? SVG_SOUND_OFF : SVG_SOUND_ON;
+      document.getElementById('sound-label').textContent = isMuted ? '已靜音' : '音效開';
+    }
+
+    function playSound(type) {
+      if (isMuted) return;
+      try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'click') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(780, now + 0.08);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'pickup') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(380, now);
+          osc.frequency.exponentialRampToValueAtTime(640, now + 0.1);
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } else if (type === 'chop') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(240, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.06);
+          gain.gain.setValueAtTime(0.13, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        } else if (type === 'sizzle') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, now);
+          osc.frequency.linearRampToValueAtTime(280, now + 0.14);
+          gain.gain.setValueAtTime(0.09, now);
+          gain.gain.exponentialRampToValueAtTime(0.005, now + 0.14);
+          osc.start(now);
+          osc.stop(now + 0.14);
+        } else if (type === 'ding') {
+          // 美式收銀機出餐叮噹聲
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1046.5, now);
+          osc.frequency.setValueAtTime(1318.5, now + 0.09);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+          osc.start(now);
+          osc.stop(now + 0.45);
+        } else if (type === 'beep') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(660, now);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'trash') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(75, now + 0.18);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        }
+      } catch (e) {}
+    }
+
+    // =========================================================
+    // 2. 自繪 SVG 廚師頭像與訂單小圖標產生器
+    // =========================================================
+    function getChefAvatarSVG(color, size = 56) {
+      return `
+        <svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="32" cy="40" r="16" fill="${color}" stroke="#1E1E1E" stroke-width="4"/>
+          <path d="M17 26C13 26 11 20 15 16C17 9 25 7 32 10C39 7 47 9 49 16C53 20 51 26 47 26H17Z" fill="#FFFFFF" stroke="#1E1E1E" stroke-width="4" stroke-linejoin="round"/>
+          <circle cx="27" cy="38" r="2.5" fill="#1E1E1E"/>
+          <circle cx="37" cy="38" r="2.5" fill="#1E1E1E"/>
+          <path d="M26 45C28.5 48 35.5 48 38 45" stroke="#1E1E1E" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>
+      `;
+    }
+
+    function getIngredientBadgeSVG(type) {
+      const svgs = {
+        bun: `<svg width="20" height="20" viewBox="0 0 32 32"><path d="M4 18C4 10 10 6 16 6C22 6 28 10 28 18H4Z" fill="#F4A261" stroke="#1E1E1E" stroke-width="3"/><rect x="5" y="21" width="22" height="5" rx="2.5" fill="#F4A261" stroke="#1E1E1E" stroke-width="3"/></svg>`,
+        cooked_meat: `<svg width="20" height="20" viewBox="0 0 32 32"><rect x="4" y="10" width="24" height="12" rx="6" fill="#6F3722" stroke="#1E1E1E" stroke-width="3"/><line x1="9" y1="14" x2="14" y2="18" stroke="#1E1E1E" stroke-width="2.5" stroke-linecap="round"/><line x1="18" y1="14" x2="23" y2="18" stroke="#1E1E1E" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+        chopped_lettuce: `<svg width="20" height="20" viewBox="0 0 32 32"><path d="M4 17C8 12 12 20 16 15C20 10 24 20 28 15" stroke="#2A9D8F" stroke-width="5" stroke-linecap="round" fill="none"/></svg>`,
+        cheese: `<svg width="20" height="20" viewBox="0 0 32 32"><polygon points="4,12 28,12 24,23 8,23" fill="#FFB703" stroke="#1E1E1E" stroke-width="3" stroke-linejoin="round"/></svg>`,
+        tomato: `<svg width="20" height="20" viewBox="0 0 32 32"><circle cx="16" cy="17" r="10" fill="#E63946" stroke="#1E1E1E" stroke-width="3"/><path d="M16 7L13 11M16 7L19 11" stroke="#2A9D8F" stroke-width="3" stroke-linecap="round"/></svg>`
+      };
+      return svgs[type] || '';
+    }
+
+    // =========================================================
+    // 3. 全局狀態管理與畫面切換
+    // =========================================================
+    const appState = {
+      mode: 'single',
+      roomCode: '4829',
+      maxPlayers: 4,
+      shiftSeconds: 90,
+      players: []
+    };
+
+    const CHEF_PRESETS = [
+      { color: '#E63946', defaultName: '漢堡小當家' },
+      { color: '#2A9D8F', defaultName: '鐵板神射手' },
+      { color: '#FFB703', defaultName: '起司狂熱者' },
+      { color: '#457B9D', defaultName: '美式大胃王' }
+    ];
+
+    function loadBestScore() {
+      const best = localStorage.getItem('crazy_cook_best_v11') || '0';
+      document.getElementById('home-best-score').textContent = `$${best}`;
+    }
+    loadBestScore();
+
+    function showToast(msg) {
+      const banner = document.getElementById('toast-banner');
+      const text = document.getElementById('toast-text');
+      text.textContent = msg;
+      banner.classList.remove('opacity-0', '-translate-y-2');
+      banner.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        banner.classList.remove('opacity-100', 'translate-y-0');
+        banner.classList.add('opacity-0', '-translate-y-2');
+      }, 2400);
+    }
+
+    function switchScreen(screenId) {
+      ['screen-home', 'screen-multiplayer-hub', 'screen-ready-room', 'screen-game', 'screen-results'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    function getHostName() {
+      const raw = document.getElementById('player-name-input').value.trim();
+      return raw || '漢堡小當家';
+    }
+
+    function goHome() {
+      playSound('click');
+      stopGameLoop();
+      loadBestScore();
+      switchScreen('screen-home');
+    }
+
+    function openHelpModal() {
+      playSound('click');
+      document.getElementById('help-modal').classList.remove('hidden');
+    }
+
+    function closeHelpModal() {
+      playSound('click');
+      document.getElementById('help-modal').classList.add('hidden');
+    }
+
+    // =========================================================
+    // 4. 第一層 & 第二層流程控制
+    // =========================================================
+    function selectSinglePlayer() {
+      playSound('click');
+      appState.mode = 'single';
+      appState.maxPlayers = 1;
+      appState.shiftSeconds = 90;
+      appState.players = [
+        {
+          id: 1,
+          name: getHostName(),
+          color: CHEF_PRESETS[0].color,
+          isReady: false,
+          isBot: false
+        }
+      ];
+      enterReadyRoom();
+    }
+
+    function selectMultiplayer() {
+      playSound('click');
+      appState.mode = 'multi';
+      setRoomCapacity(4);
+      switchScreen('screen-multiplayer-hub');
+    }
+
+    function setRoomCapacity(cap) {
+      playSound('click');
+      appState.maxPlayers = cap;
+      document.querySelectorAll('.cap-btn').forEach(btn => {
+        const val = Number(btn.dataset.cap);
+        if (val === cap) {
+          btn.classList.remove('bg-[#FDF6E3]');
+          btn.classList.add('bg-[#FFB703]');
+        } else {
+          btn.classList.remove('bg-[#FFB703]');
+          btn.classList.add('bg-[#FDF6E3]');
+        }
+      });
+    }
+
+    function createRoom() {
+      playSound('click');
+      appState.mode = 'multi';
+      appState.roomCode = String(Math.floor(1000 + Math.random() * 9000));
+      appState.shiftSeconds = Number(document.getElementById('diner-shift-select').value) || 90;
+      appState.players = [
+        {
+          id: 1,
+          name: getHostName(),
+          color: CHEF_PRESETS[0].color,
+          isReady: false,
+          isBot: false
+        }
+      ];
+      enterReadyRoom();
+      showToast(`已創立房間 #${appState.roomCode}！可邀請好友輸入密碼或使用 Demo 模擬器`);
+    }
+
+    function fillDemoRoomCode() {
+      playSound('click');
+      document.getElementById('join-code-input').value = '5888';
+      showToast('已填入測試房號 #5888，點擊下方「加入廚房房間」即可進入！');
+    }
+
+    function joinRoomWithCode() {
+      playSound('click');
+      const code = document.getElementById('join-code-input').value.trim();
+      if (!/^\d{4}$/.test(code)) {
+        showToast('請輸入正確的 4 位數字房間密碼！');
+        return;
+      }
+      appState.mode = 'multi';
+      appState.roomCode = code;
+      appState.maxPlayers = 4;
+      appState.shiftSeconds = 90;
+      appState.players = [
+        {
+          id: 1,
+          name: '房主_傑克',
+          color: CHEF_PRESETS[0].color,
+          isReady: true,
+          isBot: true
+        },
+        {
+          id: 2,
+          name: getHostName() + ' (你)',
+          color: CHEF_PRESETS[1].color,
+          isReady: false,
+          isBot: false
+        }
+      ];
+      enterReadyRoom();
+      showToast(`成功加入房間 #${code}！請點擊你的「點擊準備！」按鈕`);
+    }
+
+    // =========================================================
+    // 5. 第三層：準備大廳 (READY ROOM)
+    // =========================================================
+    function enterReadyRoom() {
+      switchScreen('screen-ready-room');
+      const isMulti = appState.mode === 'multi';
+      document.getElementById('room-code-box').style.display = isMulti ? 'flex' : 'none';
+      document.getElementById('demo-simulator-bar').style.display = isMulti ? 'flex' : 'none';
+      document.getElementById('display-room-code').textContent = `#${appState.roomCode}`;
+      renderReadySlots();
+    }
+
+    function leaveReadyRoom() {
+      playSound('click');
+      if (appState.mode === 'multi') {
+        switchScreen('screen-multiplayer-hub');
+      } else {
+        switchScreen('screen-home');
+      }
+    }
+
+    function copyRoomCode() {
+      playSound('click');
+      const tempInput = document.createElement('input');
+      tempInput.value = appState.roomCode;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast(`已複製房間密碼：${appState.roomCode}`);
+    }
+
+    function togglePlayerReady(playerId) {
+      playSound('click');
+      const p = appState.players.find(item => item.id === playerId);
+      if (p) {
+        p.isReady = !p.isReady;
+        renderReadySlots();
+      }
+    }
+
+    function simulateAddBot() {
+      playSound('click');
+      if (appState.players.length >= appState.maxPlayers) {
+        showToast(`房間人數已達上限 (${appState.maxPlayers} 人)！`);
+        return;
+      }
+      const nextIdx = appState.players.length;
+      const preset = CHEF_PRESETS[nextIdx % CHEF_PRESETS.length];
+      appState.players.push({
+        id: nextIdx + 1,
+        name: preset.defaultName,
+        color: preset.color,
+        isReady: false,
+        isBot: true
+      });
+      renderReadySlots();
+      showToast(`夥伴「${preset.defaultName}」加入了房間！`);
+    }
+
+    function simulateToggleBotsReady() {
+      playSound('click');
+      const bots = appState.players.filter(p => p.isBot);
+      if (bots.length === 0) {
+        showToast('目前沒有模擬夥伴，請先按「+ 模擬夥伴加入」喔！');
+        return;
+      }
+      const anyNotReady = bots.some(b => !b.isReady);
+      bots.forEach(b => b.isReady = anyNotReady);
+      renderReadySlots();
+      showToast(anyNotReady ? '所有模擬夥伴皆已確認準備！' : '已取消夥伴準備狀態');
+    }
+
+    function simulateClearBots() {
+      playSound('click');
+      appState.players = appState.players.filter(p => !p.isBot);
+      renderReadySlots();
+      showToast('已清空模擬夥伴');
+    }
+
+    function renderReadySlots() {
+      const grid = document.getElementById('player-slots-grid');
+      grid.innerHTML = '';
+
+      const isMulti = appState.mode === 'multi';
+      const totalSlots = isMulti ? appState.maxPlayers : 1;
+
+      document.getElementById('ready-mode-badge').textContent = isMulti
+        ? `多人連線模式 (${appState.players.length}/${appState.maxPlayers} 位主廚已連線)`
+        : '單人挑戰模式 (1/1 位主廚就緒)';
+
+      grid.className = totalSlots === 1
+        ? 'grid grid-cols-1 max-w-sm mx-auto gap-4 mb-6'
+        : totalSlots === 2
+          ? 'grid grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto gap-4 mb-6'
+          : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6';
+
+      for (let i = 0; i < totalSlots; i++) {
+        const player = appState.players[i];
+        const card = document.createElement('div');
+
+        if (player) {
+          card.className = `pop-card rounded-3xl p-5 flex flex-col items-center justify-between transition-all ${
+            player.isReady ? 'bg-[#D8F3DC]' : 'bg-white'
+          }`;
+
+          card.innerHTML = `
+            <div class="w-full flex items-center justify-between mb-2">
+              <span class="font-black text-xs px-2.5 py-0.5 rounded-full text-white border-2 border-[#1E1E1E]" style="background:${player.color}">
+                P${player.id}
+              </span>
+              <span class="text-xs font-black px-2 py-0.5 rounded-md border-2 border-[#1E1E1E] ${
+                player.isReady ? 'bg-[#2A9D8F] text-white' : 'bg-[#FFB703] text-[#1E1E1E]'
+              }">
+                ${player.isReady ? 'READY 準備完成' : 'WAITING 等待中'}
+              </span>
+            </div>
+
+            <div class="w-20 h-20 rounded-2xl border-3 border-[#1E1E1E] flex items-center justify-center my-2 shadow-[3px_3px_0px_#1E1E1E]" style="background:${player.color}22">
+              ${getChefAvatarSVG(player.color, 58)}
+            </div>
+
+            <div class="font-black text-base text-[#1E1E1E] text-center mb-4 truncate w-full">
+              ${player.name}
+            </div>
+
+            <button onclick="togglePlayerReady(${player.id})"
+              class="pop-btn w-full py-2.5 rounded-xl font-black text-sm ${
+                player.isReady
+                  ? 'bg-[#2A9D8F] text-white'
+                  : 'bg-[#FFB703] text-[#1E1E1E] animate-pulse-fast'
+              }">
+              ${player.isReady ? '取消準備' : '點擊準備！'}
+            </button>
+          `;
+        } else {
+          card.className = 'border-4 border-dashed border-[#1E1E1E]/40 bg-white/55 rounded-3xl p-5 flex flex-col items-center justify-center min-h-[245px] text-center';
+          card.innerHTML = `
+            <div class="w-16 h-16 rounded-full border-3 border-dashed border-[#1E1E1E]/35 flex items-center justify-center mb-2 text-2xl font-black text-[#1E1E1E]/35">
+              +
+            </div>
+            <div class="font-black text-sm text-[#1E1E1E]/55">空位 P${i + 1}</div>
+            <div class="text-xs font-bold text-[#1E1E1E]/45 mt-1">等待夥伴輸入房號加入...</div>
+          `;
+        }
+
+        grid.appendChild(card);
+      }
+
+      // 驗證開局條件：所有連線玩家皆按下準備（多人模式需至少 2 人連線）
+      const readyCount = appState.players.filter(p => p.isReady).length;
+      const totalJoined = appState.players.length;
+      const minPlayersMet = isMulti ? totalJoined >= 2 : totalJoined === 1;
+      const allReady = minPlayersMet && readyCount === totalJoined;
+
+      document.getElementById('ready-status-summary').textContent =
+        `目前準備進度：${readyCount} / ${totalJoined} 位玩家已確認準備`;
+
+      const ruleHint = document.getElementById('ready-rule-hint');
+      if (isMulti && totalJoined < 2) {
+        ruleHint.textContent = '多人模式至少需要 2 位玩家連線（可點上方「+ 模擬夥伴加入」進行單機測試）';
+      } else {
+        ruleHint.textContent = '必須所有在場玩家皆確認「READY 準備完成」後，才可正式開始營業！';
+      }
+
+      const startBtn = document.getElementById('start-game-btn');
+      startBtn.disabled = !allReady;
+      if (allReady) {
+        startBtn.classList.add('animate-pulse-fast');
+      } else {
+        startBtn.classList.remove('animate-pulse-fast');
+      }
+    }
+
+    function triggerGameStart() {
+      playSound('beep');
+      const overlay = document.getElementById('countdown-overlay');
+      const numEl = document.getElementById('countdown-number');
+      overlay.classList.remove('hidden');
+
+      let count = 3;
+      numEl.textContent = count;
+
+      const timer = setInterval(() => {
+        count--;
+        if (count > 0) {
+          playSound('beep');
+          numEl.textContent = count;
+        } else if (count === 0) {
+          playSound('ding');
+          numEl.textContent = 'GO!';
+        } else {
+          clearInterval(timer);
+          overlay.classList.add('hidden');
+          startKitchenGameplay();
+        }
+      }, 720);
+    }
+
+    // =========================================================
+    // 6. 第四層：純向量繪製快餐廚房引擎 (CANVAS VECTOR ENGINE)
+    // =========================================================
+    const canvas = document.getElementById('kitchen-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const COLS = 10;
+    const ROWS = 6;
+    let tileSize = 64;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    // 廚房平面圖配置 (10x6)
+    // 食材箱：BUN(麵包), MEAT(生肉排), LETTUCE(生菜), CHEESE(起司片), TOMATO(番茄)
+    // 工作站：CHOP(砧板), GRILL(煎台), PLATE(漢堡組裝台), SERVE(出餐窗口), TRASH(垃圾桶)
+    const KITCHEN_LAYOUT = [
+      ['#', 'BUN', 'MEAT', 'GRILL', 'GRILL', 'SERVE', 'SERVE', 'TRASH', '#'],
+      ['#', '.',   '.',    '.',     '.',     '.',     '.',     '.',     '#'],
+      ['LETTUCE', '.', '.', 'PLATE', 'PLATE', '.',   '.',     '.',     'CHEESE'],
+      ['CHOP',    '.', '.', '.',     '.',     '.',     '.',     '.',     'TOMATO'],
+      ['CHOP',    '.', '.', '.',     '.',     '.',     '.',     '.',     '.'],
+      ['#', '#',   '#',    '#',     '#',     '#',     '#',     '#',     '#']
+    ];
+    // 調整為 9 欄以讓工作站更緊湊好操作
+    const GRID_COLS = 9;
+    const GRID_ROWS = 6;
+
+    const STATION_META = {
+      'BUN':     { label: '漢堡麵包', bg: '#F4A261' },
+      'MEAT':    { label: '生肉排',   bg: '#E76F51' },
+      'LETTUCE': { label: '新鮮生菜', bg: '#52B788' },
+      'CHEESE':  { label: '切達起司', bg: '#FFB703' },
+      'TOMATO':  { label: '牛番茄',   bg: '#E63946' },
+      'CHOP':    { label: '切菜砧板', bg: '#E9C46A' },
+      'GRILL':   { label: '鐵板煎台', bg: '#495057' },
+      'PLATE':   { label: '漢堡組裝', bg: '#A8DADC' },
+      'SERVE':   { label: '出餐窗口', bg: '#2A9D8F' },
+      'TRASH':   { label: '垃圾桶',   bg: '#6C757D' },
+      '#':       { label: '',         bg: '#343A40' }
+    };
+
+    // 三種美式漢堡訂單食譜
+    const RECIPES = [
+      {
+        id: 'classic_cheese',
+        name: '經典起司堡',
+        price: 120,
+        reqs: ['bun', 'cooked_meat', 'cheese']
+      },
+      {
+        id: 'fresh_veggie',
+        name: '田園鮮蔬堡',
+        price: 140,
+        reqs: ['bun', 'chopped_lettuce', 'tomato']
+      },
+      {
+        id: 'supreme_burger',
+        name: '美式總匯滿漢堡',
+        price: 200,
+        reqs: ['bun', 'cooked_meat', 'chopped_lettuce', 'cheese', 'tomato']
+      }
+    ];
+
+    let gameLoopId = null;
+    let gameTimerInterval = null;
+    let orderSpawnInterval = null;
+
+    const gameState = {
+      running: false,
+      score: 0,
+      combo: 1,
+      maxCombo: 1,
+      timeLeft: 90,
+      completedOrders: 0,
+      missedOrders: 0,
+      orders: [],
+      stations: {},
+      chefs: [],
+      keys: {},
+      floatingTexts: []
+    };
+
+    function resizeCanvas() {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      const availW = rect.width - 16;
+      const availH = Math.max(330, rect.height - 54);
+
+      canvas.width = availW;
+      canvas.height = availH;
+
+      tileSize = Math.floor(Math.min(availW / GRID_COLS, availH / GRID_ROWS));
+      offsetX = Math.floor((availW - tileSize * GRID_COLS) / 2);
+      offsetY = Math.floor((availH - tileSize * GRID_ROWS) / 2);
+    }
+
+    window.addEventListener('resize', () => {
+      if (gameState.running) resizeCanvas();
+    });
+
+    function startKitchenGameplay() {
+      switchScreen('screen-game');
+      resizeCanvas();
+
+      gameState.running = true;
+      gameState.score = 0;
+      gameState.combo = 1;
+      gameState.maxCombo = 1;
+      gameState.timeLeft = appState.shiftSeconds;
+      gameState.completedOrders = 0;
+      gameState.missedOrders = 0;
+      gameState.orders = [];
+      gameState.stations = {};
+      gameState.floatingTexts = [];
+
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const type = KITCHEN_LAYOUT[r][c];
+          if (type !== '.' && type !== '#') {
+            gameState.stations[`${r},${c}`] = {
+              r, c, type,
+              items: [],
+              progress: 0,
+              burnt: false
+            };
+          }
+        }
+      }
+
+      const p1 = appState.players[0] || { name: 'P1', color: '#E63946' };
+      gameState.chefs = [
+        {
+          id: 1,
+          name: p1.name,
+          color: p1.color,
+          x: 3.5,
+          y: 1.8,
+          dirX: 0,
+          dirY: -1,
+          holding: null,
+          targetStation: null,
+          isAI: false
+        }
+      ];
+
+      const p2Hint = document.getElementById('p2-control-hint');
+      if (appState.mode === 'multi' && appState.players.length >= 2) {
+        const p2 = appState.players[1];
+        p2Hint.classList.remove('hidden');
+        gameState.chefs.push({
+          id: 2,
+          name: p2.name,
+          color: p2.color,
+          x: 5.5,
+          y: 1.8,
+          dirX: 0,
+          dirY: -1,
+          holding: null,
+          targetStation: null,
+          isAI: p2.isBot
+        });
+      } else {
+        p2Hint.classList.add('hidden');
+      }
+
+      spawnOrder();
+      spawnOrder();
+      updateHUD();
+      renderOrdersRail();
+
+      clearInterval(gameTimerInterval);
+      gameTimerInterval = setInterval(() => {
+        if (!gameState.running) return;
+        gameState.timeLeft--;
+        updateHUD();
+
+        for (let i = gameState.orders.length - 1; i >= 0; i--) {
+          gameState.orders[i].timeLeft--;
+          if (gameState.orders[i].timeLeft <= 0) {
+            gameState.orders.splice(i, 1);
+            gameState.missedOrders++;
+            gameState.combo = 1; // 逾時重置連擊
+            updateHUD();
+            playSound('trash');
+            showToast('訂單逾時取消！連擊倍數已重置');
+          }
+        }
+        renderOrdersRail();
+
+        if (gameState.timeLeft <= 0) {
+          finishShift();
+        }
+      }, 1000);
+
+      clearInterval(orderSpawnInterval);
+      orderSpawnInterval = setInterval(() => {
+        if (!gameState.running) return;
+        if (gameState.orders.length < 3) {
+          spawnOrder();
+          renderOrdersRail();
+        }
+      }, 10000);
+
+      lastFrameTime = performance.now();
+      gameLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    function stopGameLoop() {
+      gameState.running = false;
+      cancelAnimationFrame(gameLoopId);
+      clearInterval(gameTimerInterval);
+      clearInterval(orderSpawnInterval);
+    }
+
+    function spawnOrder() {
+      const recipe = RECIPES[Math.floor(Math.random() * RECIPES.length)];
+      gameState.orders.push({
+        uid: Math.random().toString(36).slice(2, 7),
+        ...recipe,
+        maxTime: 55,
+        timeLeft: 55
+      });
+    }
+
+    function updateHUD() {
+      document.getElementById('hud-score').textContent = `$${gameState.score}`;
+      document.getElementById('hud-combo').textContent = `x${gameState.combo}`;
+      document.getElementById('hud-timer').textContent = `${gameState.timeLeft}s`;
+    }
+
+    function renderOrdersRail() {
+      const rail = document.getElementById('orders-rail');
+      if (gameState.orders.length === 0) {
+        rail.innerHTML = `<div class="text-sm font-black text-gray-400 px-4">等待新顧客點餐中...</div>`;
+        return;
+      }
+
+      rail.innerHTML = gameState.orders.map(order => {
+        const pct = Math.max(0, Math.round((order.timeLeft / order.maxTime) * 100));
+        const barColor = pct > 50 ? 'bg-[#2A9D8F]' : pct > 25 ? 'bg-[#FFB703]' : 'bg-[#E63946]';
+        const reqBadges = order.reqs.map(r => `
+          <span class="inline-flex items-center justify-center bg-white border-2 border-[#1E1E1E] rounded-lg p-0.5">
+            ${getIngredientBadgeSVG(r)}
+          </span>
+        `).join('');
+
+        return `
+          <div class="border-3 border-[#1E1E1E] bg-[#FDF6E3] rounded-xl p-2 min-w-[175px] flex-shrink-0 shadow-[3px_3px_0px_#1E1E1E]">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-black text-xs text-[#1E1E1E] truncate">${order.name}</span>
+              <span class="bg-[#1E1E1E] text-[#FFB703] text-xs font-black px-2 py-0.5 rounded-full">$${order.price}</span>
+            </div>
+            <div class="flex items-center gap-1 mb-1.5 flex-wrap">
+              ${reqBadges}
+            </div>
+            <div class="w-full h-2 bg-gray-200 rounded-full border border-[#1E1E1E] overflow-hidden">
+              <div class="${barColor} h-full transition-all duration-300" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 鍵盤操作
+    window.addEventListener('keydown', (e) => {
+      gameState.keys[e.code] = true;
+      if (!gameState.running) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        interactWithFacingStation(gameState.chefs[0]);
+      }
+      if (e.code === 'Enter' && gameState.chefs[1]) {
+        e.preventDefault();
+        interactWithFacingStation(gameState.chefs[1]);
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      gameState.keys[e.code] = false;
+    });
+
+    // 點擊/觸控畫布尋路互動
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!gameState.running) return;
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const col = Math.floor((clickX - offsetX) / tileSize);
+      const row = Math.floor((clickY - offsetY) / tileSize);
+
+      if (row >= 0 && row < GRID_ROWS && col >= 0 && col < GRID_COLS) {
+        const chef = gameState.chefs[0];
+        const cell = KITCHEN_LAYOUT[row][col];
+
+        if (cell === '.') {
+          chef.targetStation = { tx: col + 0.5, ty: row + 0.5, stationKey: null };
+        } else if (cell !== '#') {
+          const stand = findAdjacentFloor(row, col);
+          if (stand) {
+            chef.targetStation = {
+              tx: stand.c + 0.5,
+              ty: stand.r + 0.5,
+              stationKey: `${row},${col}`,
+              faceX: col - stand.c,
+              faceY: row - stand.r
+            };
+          }
+        }
+      }
+    });
+
+    function findAdjacentFloor(r, c) {
+      const dirs = [
+        { r: r + 1, c },
+        { r: r - 1, c },
+        { r, c: c + 1 },
+        { r, c: c - 1 }
+      ];
+      for (const d of dirs) {
+        if (d.r >= 0 && d.r < GRID_ROWS && d.c >= 0 && d.c < GRID_COLS && KITCHEN_LAYOUT[d.r][d.c] === '.') {
+          return d;
+        }
+      }
+      return null;
+    }
+
+    function addFloatingText(gridX, gridY, text, color = '#FFB703') {
+      gameState.floatingTexts.push({
+        x: offsetX + gridX * tileSize,
+        y: offsetY + gridY * tileSize,
+        text,
+        color,
+        life: 1.0
+      });
+    }
+
+    function interactWithFacingStation(chef) {
+      const targetC = Math.floor(chef.x + chef.dirX * 0.75);
+      const targetR = Math.floor(chef.y + chef.dirY * 0.75);
+      const st = gameState.stations[`${targetR},${targetC}`];
+      if (st) interactWithStation(chef, st);
+    }
+
+    function interactWithStation(chef, st) {
+      const hand = chef.holding;
+
+      // 1. 垃圾桶
+      if (st.type === 'TRASH') {
+        if (hand) {
+          chef.holding = null;
+          playSound('trash');
+          addFloatingText(st.c + 0.5, st.r, '已丟棄', '#E63946');
+        }
+        return;
+      }
+
+      // 2. 五大食材箱
+      if (['BUN', 'MEAT', 'LETTUCE', 'CHEESE', 'TOMATO'].includes(st.type)) {
+        if (!hand) {
+          const map = {
+            'BUN':     { id: 'bun', label: '漢堡麵包' },
+            'MEAT':    { id: 'raw_meat', label: '生肉排' },
+            'LETTUCE': { id: 'raw_lettuce', label: '整顆生菜' },
+            'CHEESE':  { id: 'cheese', label: '切達起司' },
+            'TOMATO':  { id: 'tomato', label: '牛番茄' }
+          };
+          chef.holding = { ...map[st.type] };
+          playSound('pickup');
+          addFloatingText(st.c + 0.5, st.r, `+${chef.holding.label}`, '#2A9D8F');
+        } else {
+          showToast('雙手已滿！請先放到組裝台、煎台或丟進垃圾桶');
+        }
+        return;
+      }
+
+      // 3. 切菜砧板 (CHOP)
+      if (st.type === 'CHOP') {
+        if (st.items.length === 0 && hand && hand.id === 'raw_lettuce') {
+          st.items.push(hand);
+          st.progress = 0;
+          chef.holding = null;
+          playSound('pickup');
+          return;
+        }
+        if (st.items.length === 1 && st.items[0].id === 'raw_lettuce') {
+          st.progress += 35;
+          playSound('chop');
+          addFloatingText(st.c + 0.5, st.r, '切切切!', '#FFB703');
+          if (st.progress >= 100) {
+            st.progress = 100;
+            st.items[0] = { id: 'chopped_lettuce', label: '切碎生菜' };
+          }
+          return;
+        }
+        if (st.items.length === 1 && !hand && st.items[0].id === 'chopped_lettuce') {
+          chef.holding = st.items.pop();
+          st.progress = 0;
+          playSound('pickup');
+        }
+        return;
+      }
+
+      // 4. 鐵板煎台 (GRILL)
+      if (st.type === 'GRILL') {
+        if (st.items.length === 0 && hand && hand.id === 'raw_meat') {
+          st.items.push(hand);
+          st.progress = 0;
+          st.burnt = false;
+          chef.holding = null;
+          playSound('sizzle');
+          addFloatingText(st.c + 0.5, st.r, '滋滋煎烤中...', '#FFB703');
+          return;
+        }
+        if (st.items.length === 1 && !hand) {
+          chef.holding = st.items.pop();
+          st.progress = 0;
+          st.burnt = false;
+          playSound('pickup');
+        }
+        return;
+      }
+
+      // 5. 漢堡組裝台 (PLATE) - 支援動態堆疊配料
+      if (st.type === 'PLATE') {
+        const validParts = ['bun', 'cooked_meat', 'chopped_lettuce', 'cheese', 'tomato'];
+        if (hand && validParts.includes(hand.id)) {
+          if (!st.items.some(i => i.id === hand.id)) {
+            st.items.push(hand);
+            chef.holding = null;
+            playSound('pickup');
+            addFloatingText(st.c + 0.5, st.r, `已疊入 ${hand.label}`, '#2A9D8F');
+          } else {
+            showToast('這份漢堡已經放過這個配料囉！');
+          }
+          return;
+        }
+        // 空手端起組裝好的漢堡（至少需包含漢堡麵包與1樣配料）
+        if (!hand && st.items.length > 0) {
+          if (!st.items.some(i => i.id === 'bun')) {
+            showToast('漢堡必須要有「漢堡麵包」才能端起來喔！');
+            return;
+          }
+          const parts = st.items.map(i => i.id);
+          chef.holding = {
+            id: 'assembled_burger',
+            label: '手作美式漢堡',
+            parts
+          };
+          st.items = [];
+          playSound('pickup');
+        }
+        return;
+      }
+
+      // 6. 出餐窗口 (SERVE)
+      if (st.type === 'SERVE') {
+        if (!hand || hand.id !== 'assembled_burger') {
+          showToast('請從「漢堡組裝台」端起做好的漢堡再來出餐！');
+          return;
+        }
+
+        // 比對訂單是否完全符合配料組合
+        const matchIdx = gameState.orders.findIndex(order => {
+          if (order.reqs.length !== hand.parts.length) return false;
+          return order.reqs.every(req => hand.parts.includes(req));
+        });
+
+        if (matchIdx !== -1) {
+          const served = gameState.orders.splice(matchIdx, 1)[0];
+          const earned = Math.round(served.price * (1 + (gameState.combo - 1) * 0.25));
+          gameState.score += earned;
+          gameState.completedOrders++;
+          gameState.combo++;
+          if (gameState.combo > gameState.maxCombo) gameState.maxCombo = gameState.combo;
+          chef.holding = null;
+
+          playSound('ding');
+          addFloatingText(st.c + 0.5, st.r, `+$${earned} 出餐成功!`, '#2A9D8F');
+          updateHUD();
+
+          if (gameState.orders.length < 3) spawnOrder();
+          renderOrdersRail();
+        } else {
+          playSound('trash');
+          showToast('配料跟顧客點的訂單不符喔！可丟進垃圾桶重做');
+        }
+      }
+    }
+
+    // 主遊戲迴圈
+    let lastFrameTime = 0;
+    function gameLoop(now) {
+      if (!gameState.running) return;
+      const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+      lastFrameTime = now;
+
+      updateGameLogic(dt);
+      renderKitchenCanvas();
+
+      gameLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    function updateGameLogic(dt) {
+      // 煎台自動加熱進度
+      Object.values(gameState.stations).forEach(st => {
+        if (st.type === 'GRILL' && st.items.length === 1) {
+          st.progress += dt * 24;
+          if (st.progress >= 100 && !st.burnt && st.items[0].id === 'raw_meat') {
+            st.items[0] = { id: 'cooked_meat', label: '香煎肉排' };
+          }
+          if (st.progress >= 190 && !st.burnt) {
+            st.burnt = true;
+            st.items[0] = { id: 'burnt_meat', label: '焦黑肉排' };
+            playSound('trash');
+            showToast('肉排煎焦了！快端去垃圾桶丟掉');
+          }
+        }
+      });
+
+      // 廚師移動與尋路
+      const speed = 4.7;
+      gameState.chefs.forEach((chef, idx) => {
+        let vx = 0;
+        let vy = 0;
+
+        if (idx === 0) {
+          if (gameState.keys['KeyW']) vy -= 1;
+          if (gameState.keys['KeyS']) vy += 1;
+          if (gameState.keys['KeyA']) vx -= 1;
+          if (gameState.keys['KeyD']) vx += 1;
+        } else if (idx === 1 && !chef.isAI) {
+          if (gameState.keys['ArrowUp']) vy -= 1;
+          if (gameState.keys['ArrowDown']) vy += 1;
+          if (gameState.keys['ArrowLeft']) vx -= 1;
+          if (gameState.keys['ArrowRight']) vx += 1;
+        }
+
+        if (vx !== 0 || vy !== 0) {
+          chef.targetStation = null;
+          const len = Math.hypot(vx, vy);
+          vx /= len;
+          vy /= len;
+          chef.dirX = vx;
+          chef.dirY = vy;
+          moveChefWithCollision(chef, vx * speed * dt, vy * speed * dt);
+        } else if (chef.targetStation) {
+          const dx = chef.targetStation.tx - chef.x;
+          const dy = chef.targetStation.ty - chef.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 0.12) {
+            chef.x = chef.targetStation.tx;
+            chef.y = chef.targetStation.ty;
+            if (chef.targetStation.stationKey) {
+              chef.dirX = chef.targetStation.faceX;
+              chef.dirY = chef.targetStation.faceY;
+              const st = gameState.stations[chef.targetStation.stationKey];
+              if (st) interactWithStation(chef, st);
+            }
+            chef.targetStation = null;
+          } else {
+            const nx = dx / dist;
+            const ny = dy / dist;
+            chef.dirX = nx;
+            chef.dirY = ny;
+            moveChefWithCollision(chef, nx * speed * dt, ny * speed * dt);
+          }
+        }
+      });
+
+      // 漂浮文字
+      for (let i = gameState.floatingTexts.length - 1; i >= 0; i--) {
+        const ft = gameState.floatingTexts[i];
+        ft.y -= 28 * dt;
+        ft.life -= dt * 1.1;
+        if (ft.life <= 0) gameState.floatingTexts.splice(i, 1);
+      }
+    }
+
+    function moveChefWithCollision(chef, dx, dy) {
+      const nextX = chef.x + dx;
+      const nextY = chef.y + dy;
+      const colX = Math.floor(nextX);
+      const rowCur = Math.floor(chef.y);
+      if (colX >= 0 && colX < GRID_COLS && KITCHEN_LAYOUT[rowCur][colX] === '.') {
+        chef.x = nextX;
+      }
+      const colCur = Math.floor(chef.x);
+      const rowY = Math.floor(nextY);
+      if (rowY >= 0 && rowY < GRID_ROWS && KITCHEN_LAYOUT[rowY][colCur] === '.') {
+        chef.y = nextY;
+      }
+    }
+
+    // =========================================================
+    // 7. 純 Canvas 向量圖形繪製函式（零 Emoji，100% 清晰向量）
+    // =========================================================
+    function drawVectorItem(itemId, cx, cy, s, parts = null) {
+      ctx.save();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#1E1E1E';
+
+      if (itemId === 'bun') {
+        // 漢堡麵包
+        ctx.fillStyle = '#F4A261';
+        ctx.beginPath();
+        ctx.arc(cx, cy + s * 0.05, s * 0.34, Math.PI, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillRect(cx - s * 0.34, cy + s * 0.1, s * 0.68, s * 0.14);
+        ctx.strokeRect(cx - s * 0.34, cy + s * 0.1, s * 0.68, s * 0.14);
+      } else if (itemId === 'raw_meat') {
+        // 生肉排
+        ctx.fillStyle = '#E63946';
+        ctx.beginPath();
+        ctx.roundRect(cx - s * 0.34, cy - s * 0.14, s * 0.68, s * 0.28, s * 0.14);
+        ctx.fill();
+        ctx.stroke();
+      } else if (itemId === 'cooked_meat') {
+        // 香煎肉排（帶烤網紋）
+        ctx.fillStyle = '#6F3722';
+        ctx.beginPath();
+        ctx.roundRect(cx - s * 0.34, cy - s * 0.14, s * 0.68, s * 0.28, s * 0.14);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.18, cy - s * 0.08);
+        ctx.lineTo(cx - s * 0.06, cy + s * 0.08);
+        ctx.moveTo(cx + s * 0.06, cy - s * 0.08);
+        ctx.lineTo(cx + s * 0.18, cy + s * 0.08);
+        ctx.stroke();
+      } else if (itemId === 'burnt_meat') {
+        // 焦黑肉排
+        ctx.fillStyle = '#212529';
+        ctx.beginPath();
+        ctx.roundRect(cx - s * 0.34, cy - s * 0.14, s * 0.68, s * 0.28, s * 0.14);
+        ctx.fill();
+        ctx.stroke();
+      } else if (itemId === 'raw_lettuce') {
+        // 整顆生菜
+        ctx.fillStyle = '#52B788';
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else if (itemId === 'chopped_lettuce') {
+        // 切碎生菜波浪
+        ctx.strokeStyle = '#2A9D8F';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.3, cy);
+        ctx.quadraticCurveTo(cx - s * 0.15, cy - s * 0.15, cx, cy);
+        ctx.quadraticCurveTo(cx + s * 0.15, cy + s * 0.15, cx + s * 0.3, cy);
+        ctx.stroke();
+      } else if (itemId === 'cheese') {
+        // 切達起司片
+        ctx.fillStyle = '#FFB703';
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.32, cy - s * 0.12);
+        ctx.lineTo(cx + s * 0.32, cy - s * 0.12);
+        ctx.lineTo(cx + s * 0.24, cy + s * 0.14);
+        ctx.lineTo(cx - s * 0.24, cy + s * 0.14);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (itemId === 'tomato') {
+        // 牛番茄
+        ctx.fillStyle = '#E63946';
+        ctx.beginPath();
+        ctx.arc(cx, cy + s * 0.03, s * 0.24, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = '#2A9D8F';
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.08, cy - s * 0.22);
+        ctx.lineTo(cx, cy - s * 0.14);
+        ctx.lineTo(cx + s * 0.08, cy - s * 0.22);
+        ctx.stroke();
+      } else if (itemId === 'assembled_burger') {
+        // 完整層疊美式漢堡
+        const list = parts || ['bun', 'cooked_meat'];
+        let curY = cy + s * 0.18;
+        // 底部麵包
+        ctx.fillStyle = '#F4A261';
+        ctx.fillRect(cx - s * 0.32, curY, s * 0.64, s * 0.1);
+        ctx.strokeRect(cx - s * 0.32, curY, s * 0.64, s * 0.1);
+        curY -= s * 0.08;
+
+        if (list.includes('cooked_meat')) {
+          ctx.fillStyle = '#6F3722';
+          ctx.fillRect(cx - s * 0.34, curY, s * 0.68, s * 0.09);
+          ctx.strokeRect(cx - s * 0.34, curY, s * 0.68, s * 0.09);
+          curY -= s * 0.07;
+        }
+        if (list.includes('cheese')) {
+          ctx.fillStyle = '#FFB703';
+          ctx.fillRect(cx - s * 0.35, curY, s * 0.70, s * 0.06);
+          ctx.strokeRect(cx - s * 0.35, curY, s * 0.70, s * 0.06);
+          curY -= s * 0.06;
+        }
+        if (list.includes('chopped_lettuce')) {
+          ctx.fillStyle = '#2A9D8F';
+          ctx.fillRect(cx - s * 0.34, curY, s * 0.68, s * 0.06);
+          ctx.strokeRect(cx - s * 0.34, curY, s * 0.68, s * 0.06);
+          curY -= s * 0.06;
+        }
+        if (list.includes('tomato')) {
+          ctx.fillStyle = '#E63946';
+          ctx.fillRect(cx - s * 0.3, curY, s * 0.6, s * 0.06);
+          ctx.strokeRect(cx - s * 0.3, curY, s * 0.6, s * 0.06);
+          curY -= s * 0.05;
+        }
+        // 頂部圓麵包
+        ctx.fillStyle = '#F4A261';
+        ctx.beginPath();
+        ctx.arc(cx, curY + s * 0.04, s * 0.32, Math.PI, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawStationIcon(type, cx, cy, s) {
+      ctx.save();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#1E1E1E';
+
+      if (['BUN', 'MEAT', 'LETTUCE', 'CHEESE', 'TOMATO'].includes(type)) {
+        const map = { BUN: 'bun', MEAT: 'raw_meat', LETTUCE: 'raw_lettuce', CHEESE: 'cheese', TOMATO: 'tomato' };
+        drawVectorItem(map[type], cx, cy - s * 0.06, s * 0.95);
+      } else if (type === 'CHOP') {
+        // 木砧板與菜刀
+        ctx.fillStyle = '#FDF6E3';
+        ctx.fillRect(cx - s * 0.28, cy - s * 0.2, s * 0.56, s * 0.34);
+        ctx.strokeRect(cx - s * 0.28, cy - s * 0.2, s * 0.56, s * 0.34);
+        ctx.fillStyle = '#ADB5BD';
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.15, cy - s * 0.12);
+        ctx.lineTo(cx + s * 0.2, cy + s * 0.05);
+        ctx.lineTo(cx + s * 0.14, cy + s * 0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (type === 'GRILL') {
+        // 鐵板烤網紋
+        ctx.strokeStyle = '#FFB703';
+        ctx.lineWidth = 3;
+        for (let i = -2; i <= 2; i++) {
+          ctx.beginPath();
+          ctx.moveTo(cx + i * s * 0.11, cy - s * 0.22);
+          ctx.lineTo(cx + i * s * 0.11, cy + s * 0.12);
+          ctx.stroke();
+        }
+      } else if (type === 'PLATE') {
+        // 白色瓷盤
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(cx, cy - s * 0.05, s * 0.26, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else if (type === 'SERVE') {
+        // 出餐鈴鐺
+        ctx.fillStyle = '#FFB703';
+        ctx.beginPath();
+        ctx.arc(cx, cy - s * 0.02, s * 0.22, Math.PI, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillRect(cx - s * 0.26, cy - s * 0.02, s * 0.52, s * 0.07);
+        ctx.strokeRect(cx - s * 0.26, cy - s * 0.02, s * 0.52, s * 0.07);
+      } else if (type === 'TRASH') {
+        // 垃圾桶
+        ctx.fillStyle = '#ADB5BD';
+        ctx.fillRect(cx - s * 0.18, cy - s * 0.18, s * 0.36, s * 0.32);
+        ctx.strokeRect(cx - s * 0.18, cy - s * 0.18, s * 0.36, s * 0.32);
+        ctx.fillStyle = '#E63946';
+        ctx.fillRect(cx - s * 0.22, cy - s * 0.24, s * 0.44, s * 0.06);
+        ctx.strokeRect(cx - s * 0.22, cy - s * 0.24, s * 0.44, s * 0.06);
+      }
+      ctx.restore();
+    }
+
+    function renderKitchenCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. 繪製地板與工作站
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const x = offsetX + c * tileSize;
+          const y = offsetY + r * tileSize;
+          const cell = KITCHEN_LAYOUT[r][c];
+
+          if (cell === '.') {
+            ctx.fillStyle = (r + c) % 2 === 0 ? '#FDF6E3' : '#EFE3C6';
+            ctx.fillRect(x, y, tileSize, tileSize);
+            ctx.strokeStyle = 'rgba(30,30,30,0.08)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, tileSize, tileSize);
+          } else {
+            const meta = STATION_META[cell] || STATION_META['#'];
+            ctx.fillStyle = meta.bg;
+            ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#1E1E1E';
+            ctx.strokeRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+
+            if (cell !== '#') {
+              drawStationIcon(cell, x + tileSize / 2, y + tileSize * 0.46, tileSize);
+
+              // 工作站文字標籤膠囊
+              ctx.fillStyle = '#1E1E1E';
+              const fontSize = Math.max(10, Math.floor(tileSize * 0.16));
+              ctx.font = `900 ${fontSize}px "Noto Sans TC", sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(meta.label, x + tileSize / 2, y + tileSize * 0.83);
+            }
+          }
+        }
+      }
+
+      // 2. 繪製工作台上的食材與進度條
+      Object.values(gameState.stations).forEach(st => {
+        const x = offsetX + st.c * tileSize;
+        const y = offsetY + st.r * tileSize;
+
+        if (st.items.length > 0) {
+          if (st.type === 'PLATE') {
+            // 在組裝盤上即時堆疊顯示目前放進去的漢堡層次
+            const parts = st.items.map(i => i.id);
+            drawVectorItem('assembled_burger', x + tileSize / 2, y + tileSize * 0.36, tileSize * 0.9, parts);
+          } else {
+            drawVectorItem(st.items[0].id, x + tileSize / 2, y + tileSize * 0.38, tileSize * 0.85);
+          }
+        }
+
+        if (st.progress > 0 && st.items.length > 0) {
+          const barW = tileSize - 14;
+          const barH = 8;
+          const bx = x + 7;
+          const by = y + 5;
+
+          ctx.fillStyle = '#1E1E1E';
+          ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+
+          const ratio = Math.min(1, st.progress / 100);
+          ctx.fillStyle = st.burnt ? '#E63946' : st.progress >= 100 ? '#2A9D8F' : '#FFB703';
+          ctx.fillRect(bx, by, barW * ratio, barH);
+        }
+      });
+
+      // 3. 繪製純向量廚師角色
+      gameState.chefs.forEach(chef => {
+        const cx = offsetX + chef.x * tileSize;
+        const cy = offsetY + chef.y * tileSize;
+        const radius = tileSize * 0.33;
+
+        // 腳底陰影
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + radius * 0.85, radius * 0.85, radius * 0.32, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.fill();
+
+        // 身體圓形
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = chef.color;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#1E1E1E';
+        ctx.stroke();
+
+        // 白色廚師帽頂
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.roundRect(cx - radius * 0.65, cy - radius * 1.15, radius * 1.3, radius * 0.55, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        // 雙眼（朝向移動方向微調）
+        const eyeOffX = chef.dirX * 3;
+        const eyeOffY = chef.dirY * 2;
+        ctx.fillStyle = '#1E1E1E';
+        ctx.beginPath();
+        ctx.arc(cx - radius * 0.3 + eyeOffX, cy - radius * 0.05 + eyeOffY, 2.5, 0, Math.PI * 2);
+        ctx.arc(cx + radius * 0.3 + eyeOffX, cy - radius * 0.05 + eyeOffY, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 手中拿著的食材氣泡
+        if (chef.holding) {
+          const bx = cx + radius * 0.95;
+          const by = cy - radius * 0.85;
+          ctx.beginPath();
+          ctx.arc(bx, by, radius * 0.62, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = '#1E1E1E';
+          ctx.stroke();
+
+          drawVectorItem(chef.holding.id, bx, by, tileSize * 0.55, chef.holding.parts);
+        }
+      });
+
+      // 4. 漂浮加分文字
+      gameState.floatingTexts.forEach(ft => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, ft.life);
+        ctx.font = '900 15px "Noto Sans TC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#1E1E1E';
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      });
+    }
+
+    function endGameEarly() {
+      playSound('click');
+      finishShift();
+    }
+
+    function finishShift() {
+      stopGameLoop();
+      playSound('ding');
+
+      const prevBest = Number(localStorage.getItem('crazy_cook_best_v11') || '0');
+      if (gameState.score > prevBest) {
+        localStorage.setItem('crazy_cook_best_v11', String(gameState.score));
+      }
+
+      document.getElementById('res-score').textContent = `$${gameState.score}`;
+      document.getElementById('res-completed').textContent = `${gameState.completedOrders} 份`;
+      document.getElementById('res-max-combo').textContent = `x${gameState.maxCombo}`;
+      document.getElementById('res-missed').textContent = `${gameState.missedOrders} 份`;
+
+      let rankLetter = 'B';
+      let rankTitle = '見習漢堡學徒，繼續加油！';
+      if (gameState.score >= 500) {
+        rankLetter = 'S';
+        rankTitle = '五星級美式快餐傳奇主廚！';
+      } else if (gameState.score >= 240) {
+        rankLetter = 'A';
+        rankTitle = '金牌快餐店店長，出餐神速！';
+      }
+
+      document.getElementById('result-rank-badge').innerHTML = `
+        <div class="w-24 h-24 rounded-full bg-[#FFB703] border-4 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] flex items-center justify-center text-5xl font-black text-[#1E1E1E]">
+          ${rankLetter}
+        </div>
+      `;
+      document.getElementById('result-rank-title').textContent = rankTitle;
+
+      switchScreen('screen-results');
+    }
+
+    function replayCurrentMode() {
+      playSound('click');
+      appState.players.forEach(p => p.isReady = false);
+      enterReadyRoom();
+    }
+  </script>
+</body>
+</html>
