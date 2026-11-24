@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crazy COOK — 美式復古快餐廚房 V2.1（跨裝置即時聯機）</title>
-  <!-- PeerJS (WebRTC P2P 跨裝置即時連線，無需自建後端伺服器) -->
+  <title>Crazy COOK — 美式復古快餐廚房 V2.2（穩定跨裝置聯機）</title>
+  <!-- PeerJS 搭配多組 STUN/TURN 伺服器設定，提升手機與筆電跨網路／防火牆連線成功率 -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root {
@@ -504,7 +504,7 @@
     <div class="brand-badge">
       <span class="brand-icon-box" id="topLogoIcon"></span>
       <span>CRAZY COOK</span>
-      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V2.1</span>
+      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V2.2</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-light" onclick="openHelpModal()">玩法與操作說明</button>
@@ -581,7 +581,7 @@
               <span class="status-pill" style="background:var(--diner-red);color:#FFF;">2 DEVICES LIVE</span>
             </div>
             <h2 style="margin:0 0 8px;font-size:1.45rem;">雙裝置房號連線</h2>
-            <p style="margin:0;font-weight:700;line-height:1.5;">兩台電腦或手機各開網頁！一台「建立房號」，另一台「輸入 4 碼房號」加入，即時同步雙方準備狀態與隊友即時移動。</p>
+            <p style="margin:0;font-weight:700;line-height:1.5;">手機與筆電各開網頁！一台「建立房號」，另一台「輸入 4 碼房號」加入，即時同步雙方準備狀態與隊友即時移動。</p>
           </div>
           <button class="btn btn-yellow" onclick="openRoomSelect()">創立 / 輸入房號連線 →</button>
         </div>
@@ -598,7 +598,7 @@
       <div class="lobby-grid">
         <div class="card" style="background:#FFF8E7;">
           <h3 style="margin-top:0;">1. 房主建立房間（第一台裝置）</h3>
-          <p style="font-weight:700;color:#444;">點擊下方按鈕會向連線中繼伺服器註冊一組 4 碼房號，請把這 4 碼告訴另一台裝置的隊友。</p>
+          <p style="font-weight:700;color:#444;">點擊下方按鈕產生一組 4 碼房號，請把這 4 碼告訴另一台裝置的隊友。</p>
           <button class="btn btn-red" style="width:100%;" id="createRoomBtn" onclick="createOnlineRoom()">立即建立連線房間並產生 4 碼房號</button>
         </div>
 
@@ -632,7 +632,10 @@
             <span class="conn-dot" id="connDot"></span>
             <span id="connStatusLabel">正在建立連線頻道...</span>
           </div>
-          <button class="btn btn-light" style="padding:6px 12px;font-size:0.84rem;" onclick="copyRoomCode()">複製房號</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-light" style="padding:6px 12px;font-size:0.84rem;" onclick="retryConnection()">重新連線</button>
+            <button class="btn btn-light" style="padding:6px 12px;font-size:0.84rem;" onclick="copyRoomCode()">複製房號</button>
+          </div>
         </div>
 
         <div id="playersGrid" class="players-grid"></div>
@@ -703,7 +706,17 @@
   </div>
 
   <script>
-    const ROOM_PREFIX = 'crazy-cook-v21-room-';
+    const ROOM_PREFIX = 'crazycook-room-';
+
+    const PEER_CONFIG = {
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:global.stun.twilio.com:3478' }
+        ]
+      }
+    };
 
     const state = {
       playerName: '漢堡小當家',
@@ -741,6 +754,7 @@
     let peer = null;
     let dataConn = null;
     let netTickTimer = null;
+    let helloRetryTimer = null;
 
     const RECIPES = [
       { id: 'classic', name: '經典美式起司堡', price: 120, items: ['bun', 'patty', 'cheese', 'bun'] },
@@ -893,6 +907,8 @@
     function cleanupNetwork() {
       clearInterval(netTickTimer);
       netTickTimer = null;
+      clearInterval(helloRetryTimer);
+      helloRetryTimer = null;
       if (dataConn) {
         try { dataConn.close(); } catch (e) {}
         dataConn = null;
@@ -939,14 +955,63 @@
       goScreen('screenRoomSelect');
     }
 
+    function retryConnection() {
+      if (!state.roomCode || state.mode !== 'online') return;
+      if (state.role === 'p1') {
+        initHostPeer(state.roomCode);
+      } else {
+        initGuestPeer(state.roomCode);
+      }
+    }
+
+    function initHostPeer(code) {
+      cleanupNetwork();
+      state.connected = false;
+      setConnIndicator('wait', `正在註冊房號 #${code} 連線頻道...`);
+
+      peer = new Peer(ROOM_PREFIX + code, PEER_CONFIG);
+      peer.on('open', () => {
+        setConnIndicator('wait', `房號 #${code} 已就緒！請在另一台裝置輸入「${code}」加入...`);
+      });
+
+      peer.on('connection', (conn) => {
+        dataConn = conn;
+        setupConnectionHandlers(conn);
+      });
+
+      peer.on('disconnected', () => {
+        setConnIndicator('wait', `連線中繼暫時中斷，正在重新連線 #${code}...`);
+        try { peer.reconnect(); } catch (e) {}
+      });
+
+      peer.on('error', (err) => {
+        setConnIndicator('err', `房號 #${code} 連線狀態：${err.type || '錯誤'}（可點「重新連線」或返回重開房號）`);
+      });
+    }
+
+    function initGuestPeer(code) {
+      cleanupNetwork();
+      state.connected = false;
+      setConnIndicator('wait', `正在連線至房號 #${code}...`);
+
+      peer = new Peer(undefined, PEER_CONFIG);
+      peer.on('open', () => {
+        const conn = peer.connect(ROOM_PREFIX + code, { reliable: true });
+        dataConn = conn;
+        setupConnectionHandlers(conn);
+      });
+
+      peer.on('error', (err) => {
+        setConnIndicator('err', `無法連上房號 #${code}（${err.type || '連線逾時'}），請確認房號並按「重新連線」`);
+      });
+    }
+
     function createOnlineRoom() {
       if (typeof Peer === 'undefined') {
-        document.getElementById('roomErrorMsg').textContent = '連線元件載入中，請稍後再試或檢查網路！';
+        document.getElementById('roomErrorMsg').textContent = '連線元件尚未載入完成，請稍後再試！';
         return;
       }
-      cleanupNetwork();
       syncPlayerName();
-
       const code = String(Math.floor(1000 + Math.random() * 9000));
       state.mode = 'online';
       state.role = 'p1';
@@ -963,24 +1028,10 @@
       document.getElementById('roomModeTag').textContent = '雙裝置連線模式 · 你是房主 (P1)';
       document.getElementById('roomCodeBadge').textContent = `房號 #${code}`;
       document.getElementById('linkStatusBanner').classList.remove('hidden');
-      setConnIndicator('wait', `房間 #${code} 已建立！請在第二台裝置輸入「${code}」加入...`);
-      document.getElementById('readySubHint').textContent = '等待第二台裝置加入並按下準備，雙方皆準備後即可由你開始營業！';
+      document.getElementById('readySubHint').textContent = '等待第二台裝置輸入房號加入並按下準備，雙方皆準備後即可由你開始營業！';
       renderReadyPlayers();
       goScreen('screenReady');
-
-      peer = new Peer(ROOM_PREFIX + code);
-      peer.on('open', () => {
-        setConnIndicator('wait', `房號 #${code} 連線就緒！等待第二台裝置輸入「${code}」加入...`);
-      });
-
-      peer.on('connection', (conn) => {
-        dataConn = conn;
-        setupConnectionHandlers(conn);
-      });
-
-      peer.on('error', (err) => {
-        setConnIndicator('err', `連線發生狀況（${err.type}），請返回重新建立房號`);
-      });
+      initHostPeer(code);
     }
 
     function joinOnlineRoom() {
@@ -990,11 +1041,9 @@
         return;
       }
       if (typeof Peer === 'undefined') {
-        document.getElementById('roomErrorMsg').textContent = '連線元件載入中，請稍後再試！';
+        document.getElementById('roomErrorMsg').textContent = '連線元件尚未載入完成，請稍後再試！';
         return;
       }
-
-      cleanupNetwork();
       syncPlayerName();
       state.mode = 'online';
       state.role = 'p2';
@@ -1013,49 +1062,51 @@
       document.getElementById('roomModeTag').textContent = '雙裝置連線模式 · 你是隊友 (P2)';
       document.getElementById('roomCodeBadge').textContent = `房號 #${code}`;
       document.getElementById('linkStatusBanner').classList.remove('hidden');
-      setConnIndicator('wait', `正在連線至房號 #${code}...`);
       document.getElementById('readySubHint').textContent = '你按下「準備」後，房主畫面會即時顯示你已準備，並由房主按開始營業！';
       renderReadyPlayers();
       goScreen('screenReady');
-
-      peer = new Peer();
-      peer.on('open', () => {
-        const conn = peer.connect(ROOM_PREFIX + code, { reliable: true });
-        dataConn = conn;
-        setupConnectionHandlers(conn);
-      });
-
-      peer.on('error', (err) => {
-        setConnIndicator('err', `找不到房號 #${code} 或連線失敗（${err.type}），請確認房號是否正確`);
-      });
+      initGuestPeer(code);
     }
 
     function setupConnectionHandlers(conn) {
       conn.on('open', () => {
         state.connected = true;
-        setConnIndicator('online', `已與隊友連線成功（房號 #${state.roomCode}）！雙方準備狀態與走位即時同步中`);
+        setConnIndicator('online', `雙裝置已連線成功（房號 #${state.roomCode}）！準備狀態與即時走位同步中`);
 
         if (state.role === 'p2') {
-          sendNet({
-            type: 'p2_hello',
-            player: {
-              id: 'p2',
-              name: `${state.playerName} (P2)`,
-              ready: state.players.find(p => p.id === 'p2')?.ready || false,
-              skin: state.skin,
-              band: state.band,
-              bandName: state.bandName
+          const sendHello = () => {
+            if (!state.connected || state.gameStarted) return;
+            sendNet({
+              type: 'p2_hello',
+              player: {
+                id: 'p2',
+                name: `${state.playerName} (P2)`,
+                ready: state.players.find(p => p.id === 'p2')?.ready || false,
+                skin: state.skin,
+                band: state.band,
+                bandName: state.bandName
+              }
+            });
+          };
+          sendHello();
+          helloRetryTimer = setInterval(() => {
+            if (state.players.length < 2 && !state.gameStarted) {
+              sendHello();
+            } else {
+              clearInterval(helloRetryTimer);
             }
-          });
+          }, 800);
         } else {
           broadcastLobbyFromHost();
         }
+        renderReadyPlayers();
       });
 
       conn.on('data', (msg) => {
         if (!msg || !msg.type) return;
 
         if (msg.type === 'p2_hello' && state.role === 'p1') {
+          state.connected = true;
           const others = state.players.filter(p => p.id !== 'p2');
           state.players = [...others, msg.player];
           renderReadyPlayers();
@@ -1066,6 +1117,7 @@
           renderReadyPlayers();
           broadcastLobbyFromHost();
         } else if (msg.type === 'lobby_state' && state.role === 'p2') {
+          state.connected = true;
           if (Array.isArray(msg.players)) {
             state.players = msg.players;
             renderReadyPlayers();
@@ -1100,7 +1152,7 @@
 
       conn.on('close', () => {
         state.connected = false;
-        setConnIndicator('err', '與隊友的連線已中斷');
+        setConnIndicator('err', '與隊友的連線已中斷，可點「重新連線」');
         renderReadyPlayers();
       });
     }
@@ -1132,7 +1184,7 @@
     function copyRoomCode() {
       if (!state.roomCode) return;
       navigator.clipboard?.writeText(state.roomCode);
-      setConnIndicator(state.connected ? 'online' : 'wait', `已複製房號「${state.roomCode}」！快傳給第二台裝置輸入加入`);
+      setConnIndicator(state.connected ? 'online' : 'wait', `已複製房號「${state.roomCode}」！請在另一台裝置輸入加入`);
     }
 
     function leaveRoom() {
@@ -2421,9 +2473,9 @@
 
     function openHelpModal() {
       openModal(`
-        <h3 style="margin-top:0;">Crazy COOK V2.1 雙裝置連線說明</h3>
+        <h3 style="margin-top:0;">Crazy COOK V2.2 雙裝置連線說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
-          <li><strong>建立與加入房間：</strong>第一台裝置按「建立連線房間」取得 4 碼房號；第二台裝置（另一台電腦或手機）輸入該 4 碼房號加入。</li>
+          <li><strong>建立與加入房間：</strong>筆電或手機其中一台按「建立連線房間」取得 4 碼房號；另一台輸入該 4 碼房號加入。</li>
           <li><strong>準備狀態即時同步：</strong>任一方按下「按下準備」，另一台裝置大廳卡片會立刻變綠顯示「已準備 ✓」，雙方都準備好後由房主按「開始營業！」。</li>
           <li><strong>即時走位與互動：</strong>雙方各自用 <code>WASD</code>／<code>方向鍵</code> 移動、<code>滑鼠左鍵</code> 或 <code>Space</code> 拿取／放下／丟地／疊漢堡，畫面上會即時看見隊友走位與操作！</li>
         </ol>
