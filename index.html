@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crazy COOK — 美式復古快餐廚房 V1.6</title>
+  <title>Crazy COOK — 美式復古快餐廚房 V1.7</title>
   <style>
     :root {
       --bg-cream: #FFF8E7;
@@ -504,7 +504,7 @@
     <div class="brand-badge">
       <span class="brand-icon-box" id="topLogoIcon"></span>
       <span>CRAZY COOK</span>
-      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V1.6</span>
+      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V1.7</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-light" onclick="openHelpModal()">玩法與操作說明</button>
@@ -1236,6 +1236,24 @@
       return ['bun', 'patty', 'lettuce', 'cheese', 'tomato'].includes(item);
     }
 
+    function normalizePayloadForAssembly(payload) {
+      if (!payload) return null;
+      if (payload.kind === 'single') {
+        const item = payload.item === 'raw_lettuce' ? 'lettuce' : payload.item;
+        if (isValidStackIngredient(item)) {
+          return { kind: 'single', item };
+        }
+      } else if (payload.kind === 'burger') {
+        const normalized = payload.items
+          .map(k => (k === 'raw_lettuce' ? 'lettuce' : k))
+          .filter(isValidStackIngredient);
+        if (normalized.length > 0) {
+          return { kind: 'burger', items: normalized };
+        }
+      }
+      return null;
+    }
+
     function resolveStationCollisions() {
       const c = state.chef;
       c.x = Math.max(c.radius + 8, Math.min(CANVAS_W - c.radius - 8, c.x));
@@ -1310,7 +1328,7 @@
         id: Date.now() + Math.random(),
         x: gx,
         y: gy,
-        payload: c.holding
+        payload: JSON.parse(JSON.stringify(c.holding))
       });
       const label = c.holding.kind === 'single' ? ITEM_LABELS[c.holding.item] : '漢堡';
       spawnBurstParticles(gx, gy, '#FBBF24', 6);
@@ -1376,20 +1394,30 @@
           showToast('拿起切絲生菜');
         }
       } else if (st.type === 'assembly') {
-        if (c.holding && c.holding.kind === 'single' && isValidStackIngredient(c.holding.item)) {
-          st.stack.push(c.holding.item);
-          const addedName = ITEM_LABELS[c.holding.item];
+        const norm = normalizePayloadForAssembly(c.holding);
+        if (norm && norm.kind === 'single') {
+          st.stack.push(norm.item);
+          const addedName = ITEM_LABELS[norm.item];
           c.holding = null;
           spawnBurstParticles(scx, scy, '#FACC15', 7);
           showToast(`已將「${addedName}」疊上漢堡（共 ${st.stack.length} 層）`);
-        } else if (c.holding && c.holding.kind === 'burger' && st.stack.length === 0) {
-          st.stack = [...c.holding.items];
-          c.holding = null;
-          showToast('已將漢堡放回組裝台');
+        } else if (norm && norm.kind === 'burger') {
+          if (st.stack.length === 0) {
+            st.stack = [...norm.items];
+            c.holding = null;
+            showToast('已將漢堡放回組裝台');
+          } else {
+            st.stack.push(...norm.items);
+            c.holding = null;
+            spawnBurstParticles(scx, scy, '#FACC15', 7);
+            showToast(`已合併疊上漢堡（共 ${st.stack.length} 層）`);
+          }
         } else if (!c.holding && st.stack.length > 0) {
           c.holding = { kind: 'burger', items: [...st.stack] };
           st.stack = [];
           showToast('端起漢堡，去輸送帶出餐吧！');
+        } else if (c.holding && c.holding.kind === 'single' && c.holding.item === 'burnt_meat') {
+          showToast('焦黑廢肉不能疊進漢堡，請丟進垃圾桶');
         }
       } else if (st.type === 'counter') {
         if (!st.item && c.holding && c.holding.kind === 'single') {
@@ -1430,13 +1458,36 @@
 
       state.chef.angle = Math.atan2(clickY - state.chef.y, clickX - state.chef.x);
 
+      const clickedFloor = state.floorItems.find(fi => Math.hypot(clickX - fi.x, clickY - fi.y) <= 32);
+      if (clickedFloor) {
+        const previousHolding = state.chef.holding ? JSON.parse(JSON.stringify(state.chef.holding)) : null;
+        state.chef.x = clickedFloor.x;
+        state.chef.y = clickedFloor.y;
+        resolveStationCollisions();
+        state.chef.holding = JSON.parse(JSON.stringify(clickedFloor.payload));
+        state.floorItems = state.floorItems.filter(item => item.id !== clickedFloor.id);
+        if (previousHolding) {
+          state.floorItems.push({
+            id: Date.now() + Math.random(),
+            x: clickedFloor.x + 14,
+            y: clickedFloor.y + 10,
+            payload: previousHolding
+          });
+        }
+        const name = state.chef.holding.kind === 'single' ? ITEM_LABELS[state.chef.holding.item] : '漢堡';
+        spawnBurstParticles(clickedFloor.x, clickedFloor.y, '#38BDF8', 6);
+        showToast(`從地上撿起「${name}」`);
+        updateHoldingHud();
+        return;
+      }
+
       const clickedStation = state.stations.find(st =>
         clickX >= st.x && clickX <= st.x + st.w && clickY >= st.y && clickY <= st.y + st.h
       );
 
       if (clickedStation) {
         const dEdge = distToRectEdge(state.chef.x, state.chef.y, clickedStation);
-        if (dEdge <= 76) {
+        if (dEdge <= 78) {
           interactWithStation(clickedStation);
         } else {
           const cx = clickedStation.x + clickedStation.w / 2;
@@ -1452,19 +1503,6 @@
         return;
       }
 
-      const clickedFloor = state.floorItems.find(fi => Math.hypot(clickX - fi.x, clickY - fi.y) <= 28);
-      if (clickedFloor && !state.chef.holding) {
-        state.chef.x = clickedFloor.x;
-        state.chef.y = clickedFloor.y;
-        resolveStationCollisions();
-        state.chef.holding = clickedFloor.payload;
-        state.floorItems = state.floorItems.filter(item => item.id !== clickedFloor.id);
-        const name = state.chef.holding.kind === 'single' ? ITEM_LABELS[state.chef.holding.item] : '漢堡';
-        showToast(`從地上撿起「${name}」`);
-        updateHoldingHud();
-        return;
-      }
-
       if (state.chef.holding) {
         dropHoldingToFloorAt(clickX, clickY);
         return;
@@ -1473,9 +1511,9 @@
       state.chef.x = clickX;
       state.chef.y = clickY;
       resolveStationCollisions();
-      const nearFloor = findNearbyFloorItem(state.chef.x, state.chef.y, 38);
+      const nearFloor = findNearbyFloorItem(state.chef.x, state.chef.y, 44);
       if (nearFloor && !state.chef.holding) {
-        state.chef.holding = nearFloor.payload;
+        state.chef.holding = JSON.parse(JSON.stringify(nearFloor.payload));
         state.floorItems = state.floorItems.filter(item => item.id !== nearFloor.id);
         const name = state.chef.holding.kind === 'single' ? ITEM_LABELS[state.chef.holding.item] : '漢堡';
         showToast(`撿起地上的「${name}」`);
@@ -2025,10 +2063,10 @@
 
     function openHelpModal() {
       openModal(`
-        <h3 style="margin-top:0;">Crazy COOK V1.6 操作說明</h3>
+        <h3 style="margin-top:0;">Crazy COOK V1.7 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
-          <li><strong>自由移動：</strong>按住 <code>WASD</code> 或方向鍵在廚房無格線平滑走動，主廚會帶動步伐與視線方向。</li>
-          <li><strong>左鍵拿取／放下／丟地上：</strong>靠近食材箱、煎台、砧板、組裝台或置物檯面按<strong>滑鼠左鍵</strong>即可拿取或放下；若手上拿著東西點地板，會直接<strong>丟在地上</strong>，空手點地上物品可撿起。</li>
+          <li><strong>自由移動：</strong>按住 <code>WASD</code> 或方向鍵在廚房無格線平滑走動。</li>
+          <li><strong>左鍵拿取／放下／丟地上：</strong>點食材箱、煎台、砧板、組裝台或置物檯面按左鍵拿取或放下；手上拿著物品點空白地板會丟在地上，點地上物品可撿起。</li>
           <li><strong>漢堡堆疊與出餐：</strong>把麵包、煎好的熟肉排、切絲生菜、起司、番茄依序用左鍵疊上「漢堡組裝台」，再端去右側「送餐輸送帶」左鍵出餐。</li>
         </ol>
         <div style="text-align:right;margin-top:14px;">
@@ -2064,7 +2102,7 @@
         } else {
           const fl = findNearbyFloorItem(state.chef.x, state.chef.y, 44);
           if (fl) {
-            state.chef.holding = fl.payload;
+            state.chef.holding = JSON.parse(JSON.stringify(fl.payload));
             state.floorItems = state.floorItems.filter(item => item.id !== fl.id);
             updateHoldingHud();
           }
