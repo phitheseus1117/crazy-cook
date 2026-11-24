@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crazy COOK — 美式復古快餐廚房 V1.8</title>
+  <title>Crazy COOK — 美式復古快餐廚房 V1.9</title>
   <style>
     :root {
       --bg-cream: #FFF8E7;
@@ -269,24 +269,6 @@
     .mode-card.solo { background: linear-gradient(180deg, #F0FDFA 0%, #CCFBF1 100%); }
     .mode-card.multi { background: linear-gradient(180deg, #FFFBEB 0%, #FEF08A 100%); }
 
-    .lobby-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-    }
-
-    .code-input {
-      width: 100%;
-      font-size: 1.5rem;
-      font-weight: 900;
-      letter-spacing: 8px;
-      text-align: center;
-      padding: 10px;
-      border: 3px solid var(--ink);
-      border-radius: 12px;
-      text-transform: uppercase;
-    }
-
     .players-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -323,19 +305,6 @@
     .player-slot.ready .status-pill {
       background: #22C55E;
       color: #FFF;
-    }
-
-    .demo-bar {
-      background: #FFFBEB;
-      border: 2.5px dashed var(--ink);
-      border-radius: 14px;
-      padding: 12px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
     }
 
     .hud-bar {
@@ -489,7 +458,7 @@
     <div class="brand-badge">
       <span class="brand-icon-box" id="topLogoIcon"></span>
       <span>CRAZY COOK</span>
-      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V1.8</span>
+      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V1.9</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-light" onclick="openHelpModal()">玩法與操作說明</button>
@@ -504,19 +473,19 @@
       <div class="signboard">
         <div class="signboard-tag">★ EST. 1955 · ROUTE 66 DINER ★</div>
         <h1>Crazy COOK</h1>
-        <p style="margin:6px 0 0;font-weight:700;">美式快餐大作戰 · 精緻插畫渲染 × 無格線自由走位 × 左鍵取放／丟地！</p>
+        <p style="margin:6px 0 0;font-weight:700;">美式快餐大作戰 · 單人挑戰 × 雙人同機合作（P1 WASD+Space / P2 方向鍵+Enter）！</p>
       </div>
 
       <div class="name-row">
         <span style="display:inline-flex;align-items:center;gap:6px;font-weight:900;">
           <span id="nameTagIcon"></span>
-          <span>主廚代號：</span>
+          <span>主廚代號（P1）：</span>
         </span>
         <input id="playerNameInput" type="text" maxlength="12" value="漢堡小當家" placeholder="輸入你的主廚名稱" />
         <span style="font-size:0.85rem;font-weight:800;color:#444;">最高營業額：$<span id="bestScoreDisplay">0</span></span>
       </div>
 
-      <!-- 主廚外觀自訂區（移除髮型欄，擴充 11 種代表色綁帶） -->
+      <!-- 主廚外觀自訂區 -->
       <div class="customizer-panel">
         <div class="avatar-preview-box">
           <div id="avatarPreviewSvg"></div>
@@ -563,69 +532,26 @@
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <span id="multiModeIcon"></span>
-              <span class="status-pill" style="background:var(--diner-red);color:#FFF;">2 - 4 PLAYERS</span>
+              <span class="status-pill" style="background:var(--diner-red);color:#FFF;">2 PLAYERS CO-OP</span>
             </div>
-            <h2 style="margin:0 0 8px;font-size:1.45rem;">多人遊玩</h2>
-            <p style="margin:0;font-weight:700;line-height:1.5;">最多 4 人協力合作！可「創立房間」產生密碼，或「輸入房間密碼」加入夥伴，全員準備後開局。</p>
+            <h2 style="margin:0 0 8px;font-size:1.45rem;">雙人合作模式</h2>
+            <p style="margin:0;font-weight:700;line-height:1.5;">兩位主廚同場分工合作！P1 用 <strong>WASD + Space</strong>，P2 用 <strong>方向鍵 + Enter</strong>（或滑鼠點擊），共享訂單、煎台與組裝台。</p>
           </div>
-          <button class="btn btn-yellow" onclick="openRoomSelect()">創立 / 加入房間 →</button>
+          <button class="btn btn-yellow" onclick="startDuoLobby()">進入雙人準備室 →</button>
         </div>
       </div>
     </section>
 
-    <!-- 第二層：多人創立房間 / 輸入房間密碼 -->
-    <section id="screenRoomSelect" class="hidden">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-        <button class="btn btn-light" onclick="goScreen('screenMenu')">← 返回主選單</button>
-        <h2 style="margin:0;font-size:1.4rem;">多人連線大廳 — 創立或加入房間</h2>
-      </div>
-
-      <div class="lobby-grid">
-        <div class="card" style="background:#FFF8E7;">
-          <h3 style="margin-top:0;">創立新房間</h3>
-          <p style="font-weight:700;color:#444;">建立專屬房間並生成 4 碼房號，邀請夥伴輸入密碼進入準備室。</p>
-          <div style="margin-bottom:14px;">
-            <label style="font-weight:900;display:block;margin-bottom:6px;">房間人數上限（2～4 人）：</label>
-            <select id="maxPlayersSelect" style="width:100%;padding:10px;border:3px solid var(--ink);border-radius:12px;font-weight:800;font-size:1rem;">
-              <option value="2">2 人合作</option>
-              <option value="3">3 人合作</option>
-              <option value="4" selected>4 人滿編合作</option>
-            </select>
-          </div>
-          <button class="btn btn-red" style="width:100%;" onclick="createRoom()">立即建立房間並生成密碼</button>
-        </div>
-
-        <div class="card">
-          <h3 style="margin-top:0;">輸入房間密碼</h3>
-          <p style="font-weight:700;color:#444;">輸入夥伴提供的 4 碼房間密碼加入隊伍（亦可點下方快速填入測試房號）。</p>
-          <input id="joinCodeInput" class="code-input" type="text" maxlength="4" placeholder="例如 5888" />
-          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-            <button class="btn btn-blue" style="flex:1;" onclick="joinRoomByCode()">加入房間</button>
-            <button class="btn btn-light" onclick="fillDemoCode()">填入測試房號 #5888</button>
-          </div>
-          <p id="roomErrorMsg" style="color:var(--diner-red);font-weight:900;margin:10px 0 0;min-height:22px;"></p>
-        </div>
-      </div>
-    </section>
-
-    <!-- 第三層：全員準備大廳 -->
+    <!-- 準備大廳 -->
     <section id="screenReady" class="hidden">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-bottom:3px solid var(--ink);padding-bottom:12px;">
           <div>
-            <span id="roomModeTag" class="status-pill" style="background:var(--mustard);">多人模式</span>
+            <span id="roomModeTag" class="status-pill" style="background:var(--mustard);">單人模式</span>
             <h2 style="margin:6px 0 0;">準備室 — <span id="roomCodeBadge">SOLO</span></h2>
           </div>
           <div style="display:flex;gap:8px;">
-            <button class="btn btn-light" onclick="leaveReadyRoom()">← 離開房間</button>
-          </div>
-        </div>
-
-        <div id="demoHelperBar" class="demo-bar" style="margin-top:14px;">
-          <span style="font-weight:800;font-size:0.9rem;">單機展示小幫手：可模擬夥伴加入或切換準備狀態，測試「全員確認後才開局」。</span>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-light" onclick="addSimulatedBot()">+ 模擬夥伴加入</button>
-            <button class="btn btn-light" onclick="toggleBotsReady()">切換夥伴準備狀態</button>
+            <button class="btn btn-light" onclick="goScreen('screenMenu')">← 返回主選單</button>
           </div>
         </div>
 
@@ -634,10 +560,11 @@
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:14px;border-top:3px solid var(--ink);">
           <div>
             <div style="font-weight:900;" id="readySummaryText">準備狀態確認中...</div>
-            <div style="font-size:0.85rem;font-weight:700;color:#555;">所有在場玩家皆按下「已準備」後，即可開始營業！</div>
+            <div style="font-size:0.85rem;font-weight:700;color:#555;" id="readySubHint">確認主廚設定後即可開始營業！</div>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn btn-mint" id="toggleMyReadyBtn" onclick="toggleMyReady()">按下準備</button>
+            <button class="btn btn-mint" id="toggleMyReadyBtn" onclick="toggleP1Ready()">P1 已準備</button>
+            <button class="btn btn-blue hidden" id="toggleP2ReadyBtn" onclick="toggleP2Ready()">P2 已準備</button>
             <button class="btn btn-red" id="startGameBtn" disabled onclick="beginCountdown()">開始營業！</button>
           </div>
         </div>
@@ -673,11 +600,12 @@
 
       <div class="arena-wrapper">
         <div class="control-hint-bar">
-          <div>
-            <span>移動：<strong>WASD / 方向鍵</strong>（60fps 連續自由走位） · 拿取／放下／切菜／丟地上：<strong>滑鼠左鍵</strong>（或 <strong>Space</strong>）</span>
+          <div id="controlHintText">
+            <span>P1：<strong>WASD</strong> 移動 + <strong>Space</strong> 取放／丟地 · <strong>滑鼠左鍵</strong> 互動</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span class="holding-pill" id="holdingStatus">手上：空手</span>
+            <span class="holding-pill" id="holdingStatusP1">P1：空手</span>
+            <span class="holding-pill hidden" id="holdingStatusP2" style="background:#DBEAFE;">P2：空手</span>
           </div>
         </div>
 
@@ -703,8 +631,6 @@
       bandName: '紅',
       soundOn: true,
       mode: 'solo',
-      roomCode: null,
-      maxPlayers: 4,
       players: [],
       timeLeft: 90,
       score: 0,
@@ -714,15 +640,7 @@
       servedCount: 0,
       paused: false,
       orders: [],
-      chef: {
-        x: 480,
-        y: 300,
-        radius: 21,
-        speed: 255,
-        angle: -Math.PI / 2,
-        walkPhase: 0,
-        holding: null
-      },
+      chefs: [],
       keys: {},
       stations: [],
       floorItems: [],
@@ -871,7 +789,7 @@
     }
 
     function goScreen(id) {
-      ['screenMenu', 'screenRoomSelect', 'screenReady', 'screenGame'].forEach(sec => {
+      ['screenMenu', 'screenReady', 'screenGame'].forEach(sec => {
         document.getElementById(sec).classList.toggle('hidden', sec !== id);
       });
     }
@@ -879,115 +797,68 @@
     function startSoloLobby() {
       syncPlayerName();
       state.mode = 'solo';
-      state.roomCode = 'SOLO';
-      state.maxPlayers = 1;
       state.players = [{
-        id: 'me',
-        name: state.playerName,
+        id: 'p1',
+        name: `${state.playerName} (P1)`,
         ready: true,
-        isMe: true,
         skin: state.skin,
         band: state.band,
         bandName: state.bandName
       }];
       document.getElementById('roomModeTag').textContent = '單人模式';
-      document.getElementById('roomCodeBadge').textContent = 'SOLO';
-      document.getElementById('demoHelperBar').classList.add('hidden');
+      document.getElementById('roomCodeBadge').textContent = '1P SOLO';
+      document.getElementById('toggleMyReadyBtn').textContent = 'P1 已準備';
+      document.getElementById('toggleP2ReadyBtn').classList.add('hidden');
+      document.getElementById('readySubHint').textContent = '單人模式已就緒，可隨時開始營業！';
       renderReadyPlayers();
       goScreen('screenReady');
     }
 
-    function openRoomSelect() {
+    function startDuoLobby() {
       syncPlayerName();
-      document.getElementById('roomErrorMsg').textContent = '';
-      goScreen('screenRoomSelect');
-    }
-
-    function createRoom() {
-      syncPlayerName();
-      const maxP = Number(document.getElementById('maxPlayersSelect').value);
-      const code = String(Math.floor(1000 + Math.random() * 9000));
-      state.mode = 'multi';
-      state.roomCode = code;
-      state.maxPlayers = maxP;
-      state.players = [{
-        id: 'me',
-        name: state.playerName,
-        ready: false,
-        isMe: true,
-        skin: state.skin,
-        band: state.band,
-        bandName: state.bandName
-      }];
-      document.getElementById('roomModeTag').textContent = `多人模式（上限 ${maxP} 人）`;
-      document.getElementById('roomCodeBadge').textContent = `房號 #${code}`;
-      document.getElementById('demoHelperBar').classList.remove('hidden');
-      renderReadyPlayers();
-      goScreen('screenReady');
-    }
-
-    function fillDemoCode() {
-      document.getElementById('joinCodeInput').value = '5888';
-    }
-
-    function joinRoomByCode() {
-      syncPlayerName();
-      const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
-      if (code.length < 4) {
-        document.getElementById('roomErrorMsg').textContent = '請輸入 4 碼房間密碼！';
-        return;
-      }
-      state.mode = 'multi';
-      state.roomCode = code;
-      state.maxPlayers = 4;
+      state.mode = 'duo';
+      const p2Band = state.band === '#2563EB' ? '#22C55E' : '#2563EB';
+      const p2BandName = state.band === '#2563EB' ? '綠' : '藍';
       state.players = [
-        { id: 'me', name: state.playerName, ready: false, isMe: true, skin: state.skin, band: state.band, bandName: state.bandName },
-        { id: 'b1', name: '炸薯條夥伴', ready: true, isMe: false, skin: 'yellow', band: '#2563EB', bandName: '藍' }
+        {
+          id: 'p1',
+          name: `${state.playerName} (P1)`,
+          ready: true,
+          skin: state.skin,
+          band: state.band,
+          bandName: state.bandName
+        },
+        {
+          id: 'p2',
+          name: '二號主廚 (P2)',
+          ready: false,
+          skin: 'yellow',
+          band: p2Band,
+          bandName: p2BandName
+        }
       ];
-      document.getElementById('roomModeTag').textContent = '多人模式（上限 4 人）';
-      document.getElementById('roomCodeBadge').textContent = `房號 #${code}`;
-      document.getElementById('demoHelperBar').classList.remove('hidden');
+      document.getElementById('roomModeTag').textContent = '雙人合作模式';
+      document.getElementById('roomCodeBadge').textContent = '2P CO-OP';
+      document.getElementById('toggleMyReadyBtn').textContent = '切換 P1 準備';
+      document.getElementById('toggleP2ReadyBtn').textContent = '切換 P2 準備';
+      document.getElementById('toggleP2ReadyBtn').classList.remove('hidden');
+      document.getElementById('readySubHint').textContent = 'P1（WASD + Space）與 P2（方向鍵 + Enter）皆準備後即可開局！';
       renderReadyPlayers();
       goScreen('screenReady');
     }
 
-    function addSimulatedBot() {
-      if (state.players.length >= state.maxPlayers) return;
-      const presets = [
-        { name: '起司大亨', skin: 'fair', band: '#22C55E', bandName: '綠' },
-        { name: '奶昔主廚', skin: 'dark', band: '#F472B6', bandName: '粉紅' },
-        { name: '可樂達人', skin: 'yellow', band: '#F97316', bandName: '橙' }
-      ];
-      const pick = presets[(state.players.length - 1) % presets.length];
-      state.players.push({
-        id: 'bot_' + Date.now(),
-        name: `${pick.name}${state.players.length}`,
-        ready: false,
-        isMe: false,
-        skin: pick.skin,
-        band: pick.band,
-        bandName: pick.bandName
-      });
+    function toggleP1Ready() {
+      const p1 = state.players.find(p => p.id === 'p1');
+      if (!p1) return;
+      p1.ready = !p1.ready;
       renderReadyPlayers();
     }
 
-    function toggleBotsReady() {
-      const bots = state.players.filter(p => !p.isMe);
-      if (!bots.length) return;
-      const allBotsReady = bots.every(b => b.ready);
-      bots.forEach(b => { b.ready = !allBotsReady; });
+    function toggleP2Ready() {
+      const p2 = state.players.find(p => p.id === 'p2');
+      if (!p2) return;
+      p2.ready = !p2.ready;
       renderReadyPlayers();
-    }
-
-    function toggleMyReady() {
-      const me = state.players.find(p => p.isMe);
-      if (!me) return;
-      me.ready = !me.ready;
-      renderReadyPlayers();
-    }
-
-    function leaveReadyRoom() {
-      goScreen(state.mode === 'solo' ? 'screenMenu' : 'screenRoomSelect');
     }
 
     function renderReadyPlayers() {
@@ -996,21 +867,20 @@
       state.players.forEach(p => {
         const div = document.createElement('div');
         div.className = 'player-slot' + (p.ready ? ' ready' : '');
+        const ctrlTag = p.id === 'p1' ? 'WASD + Space' : '方向鍵 + Enter';
         div.innerHTML = `
           ${renderCustomChefSvg(p, 66)}
-          <div style="font-weight:950;">${p.name} ${p.isMe ? '(你)' : ''}</div>
-          <div style="font-size:0.78rem;color:#555;font-weight:700;">綁帶：${p.bandName || '紅'}</div>
+          <div style="font-weight:950;">${p.name}</div>
+          <div style="font-size:0.78rem;color:#555;font-weight:700;">綁帶：${p.bandName} · ${ctrlTag}</div>
           <span class="status-pill">${p.ready ? '已準備' : '等待準備'}</span>
         `;
         grid.appendChild(div);
       });
 
       const allReady = state.players.length > 0 && state.players.every(p => p.ready);
-      const me = state.players.find(p => p.isMe);
-      document.getElementById('toggleMyReadyBtn').textContent = me && me.ready ? '取消準備' : '按下準備';
       document.getElementById('startGameBtn').disabled = !allReady;
       document.getElementById('readySummaryText').textContent = allReady
-        ? `全員已確認（${state.players.length}/${state.maxPlayers} 人），可以開始營業！`
+        ? `全員已確認（${state.players.length} 人），可以開始營業！`
         : `目前 ${state.players.filter(p => p.ready).length} / ${state.players.length} 人已準備`;
     }
 
@@ -1038,11 +908,26 @@
       ];
       state.floorItems = [];
       state.particles = [];
-      state.chef.x = 480;
-      state.chef.y = 300;
-      state.chef.walkPhase = 0;
-      state.chef.holding = null;
       state.beltFlashTimer = 0;
+
+      const p1Cfg = state.players[0] || { name: `${state.playerName} (P1)`, skin: state.skin, band: state.band, bandName: state.bandName };
+      if (state.mode === 'duo') {
+        const p2Cfg = state.players[1] || { name: '二號主廚 (P2)', skin: 'yellow', band: '#2563EB', bandName: '藍' };
+        state.chefs = [
+          { id: 'p1', tag: 'P1', name: p1Cfg.name, skin: p1Cfg.skin, band: p1Cfg.band, x: 410, y: 300, radius: 21, speed: 255, angle: -Math.PI / 2, walkPhase: 0, holding: null },
+          { id: 'p2', tag: 'P2', name: p2Cfg.name, skin: p2Cfg.skin, band: p2Cfg.band, x: 550, y: 300, radius: 21, speed: 255, angle: -Math.PI / 2, walkPhase: 0, holding: null }
+        ];
+        document.getElementById('controlHintText').innerHTML =
+          `<span><strong>P1</strong>：<code>WASD</code> 移動 + <code>Space</code> 互動/丟地 · <strong>P2</strong>：<code>方向鍵</code> 移動 + <code>Enter</code> 互動/丟地 · <strong>滑鼠左鍵</strong> 可操控 P1</span>`;
+        document.getElementById('holdingStatusP2').classList.remove('hidden');
+      } else {
+        state.chefs = [
+          { id: 'p1', tag: 'P1', name: p1Cfg.name, skin: p1Cfg.skin, band: p1Cfg.band, x: 480, y: 300, radius: 21, speed: 255, angle: -Math.PI / 2, walkPhase: 0, holding: null }
+        ];
+        document.getElementById('controlHintText').innerHTML =
+          `<span>移動：<strong>WASD / 方向鍵</strong>（60fps 連續自由走位） · 拿取／放下／切菜／丟地上：<strong>滑鼠左鍵</strong>（或 <strong>Space</strong>）</span>`;
+        document.getElementById('holdingStatusP2').classList.add('hidden');
+      }
     }
 
     function spawnBurstParticles(x, y, color, count = 8) {
@@ -1067,17 +952,25 @@
       updateHoldingHud();
     }
 
+    function formatChefHolding(chef) {
+      const h = chef && chef.holding;
+      if (!h) return '空手';
+      if (h.kind === 'single') return ITEM_LABELS[h.item] || h.item;
+      if (h.kind === 'burger') return `漢堡（${h.items.map(k => ITEM_LABELS[k] || k).join(' → ')}）`;
+      return '空手';
+    }
+
     function updateHoldingHud() {
-      const h = state.chef.holding;
-      let text = '手上：空手';
-      if (h) {
-        if (h.kind === 'single') text = `手上：${ITEM_LABELS[h.item] || h.item}`;
-        else if (h.kind === 'burger') text = `手上：漢堡（${h.items.map(k => ITEM_LABELS[k] || k).join(' → ')}）`;
-      }
+      const p1 = state.chefs[0];
+      const p2 = state.chefs[1];
+      let p1Text = `P1：${formatChefHolding(p1)}`;
       if (state.toastTimer > 0 && state.toastText) {
-        text += `  ｜  ${state.toastText}`;
+        p1Text += `  ｜  ${state.toastText}`;
       }
-      document.getElementById('holdingStatus').textContent = text;
+      document.getElementById('holdingStatusP1').textContent = p1Text;
+      if (p2) {
+        document.getElementById('holdingStatusP2').textContent = `P2：${formatChefHolding(p2)}`;
+      }
     }
 
     let gameTimerId = null;
@@ -1085,13 +978,13 @@
     let lastFrameTime = 0;
 
     function beginCountdown() {
-      state.timeLeft = 90;
+      state.timeLeft = state.mode === 'duo' ? 105 : 90;
       state.score = 0;
       state.combo = 1;
       state.maxCombo = 1;
       state.servedCount = 0;
       state.paused = false;
-      state.orders = [generateOrder(), generateOrder()];
+      state.orders = state.mode === 'duo' ? [generateOrder(), generateOrder(), generateOrder()] : [generateOrder(), generateOrder()];
       setupKitchen();
 
       goScreen('screenGame');
@@ -1111,7 +1004,8 @@
           finishGame();
           return;
         }
-        if (state.timeLeft % 15 === 0 && state.orders.length < 4) {
+        const maxOrders = state.mode === 'duo' ? 5 : 4;
+        if (state.timeLeft % 14 === 0 && state.orders.length < maxOrders) {
           state.orders.push(generateOrder());
         }
         state.orders.forEach(o => { o.rem -= 1; });
@@ -1146,10 +1040,10 @@
     function renderActiveChefs() {
       const strip = document.getElementById('activeChefStrip');
       strip.innerHTML = `<span style="font-weight:900;font-size:0.86rem;">出戰主廚陣容：</span>`;
-      state.players.forEach(p => {
+      state.chefs.forEach(c => {
         const badge = document.createElement('span');
         badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:#FFF8E7;border:2px solid #1A1A1A;border-radius:999px;padding:3px 10px 3px 4px;font-weight:800;font-size:0.82rem;';
-        badge.innerHTML = `${renderCustomChefSvg(p, 26)}<span>${p.name}</span>`;
+        badge.innerHTML = `${renderCustomChefSvg(c, 26)}<span>${c.name}</span>`;
         strip.appendChild(badge);
       });
     }
@@ -1205,35 +1099,54 @@
       return null;
     }
 
-    function resolveStationCollisions() {
-      const c = state.chef;
-      c.x = Math.max(c.radius + 8, Math.min(CANVAS_W - c.radius - 8, c.x));
-      c.y = Math.max(c.radius + 8, Math.min(CANVAS_H - c.radius - 8, c.y));
+    function resolveChefCollisions() {
+      for (const c of state.chefs) {
+        c.x = Math.max(c.radius + 8, Math.min(CANVAS_W - c.radius - 8, c.x));
+        c.y = Math.max(c.radius + 8, Math.min(CANVAS_H - c.radius - 8, c.y));
 
-      for (const st of state.stations) {
-        const closestX = Math.max(st.x, Math.min(c.x, st.x + st.w));
-        const closestY = Math.max(st.y, Math.min(c.y, st.y + st.h));
-        const dx = c.x - closestX;
-        const dy = c.y - closestY;
-        const distSq = dx * dx + dy * dy;
+        for (const st of state.stations) {
+          const closestX = Math.max(st.x, Math.min(c.x, st.x + st.w));
+          const closestY = Math.max(st.y, Math.min(c.y, st.y + st.h));
+          const dx = c.x - closestX;
+          const dy = c.y - closestY;
+          const distSq = dx * dx + dy * dy;
 
-        if (distSq < c.radius * c.radius) {
-          const dist = Math.sqrt(distSq);
-          if (dist > 0.0001) {
-            const overlap = c.radius - dist;
-            c.x += (dx / dist) * overlap;
-            c.y += (dy / dist) * overlap;
-          } else {
-            const leftPen = Math.abs(c.x - st.x);
-            const rightPen = Math.abs(st.x + st.w - c.x);
-            const topPen = Math.abs(c.y - st.y);
-            const botPen = Math.abs(st.y + st.h - c.y);
-            const m = Math.min(leftPen, rightPen, topPen, botPen);
-            if (m === leftPen) c.x = st.x - c.radius;
-            else if (m === rightPen) c.x = st.x + st.w + c.radius;
-            else if (m === topPen) c.y = st.y - c.radius;
-            else c.y = st.y + st.h + c.radius;
+          if (distSq < c.radius * c.radius) {
+            const dist = Math.sqrt(distSq);
+            if (dist > 0.0001) {
+              const overlap = c.radius - dist;
+              c.x += (dx / dist) * overlap;
+              c.y += (dy / dist) * overlap;
+            } else {
+              const leftPen = Math.abs(c.x - st.x);
+              const rightPen = Math.abs(st.x + st.w - c.x);
+              const topPen = Math.abs(c.y - st.y);
+              const botPen = Math.abs(st.y + st.h - c.y);
+              const m = Math.min(leftPen, rightPen, topPen, botPen);
+              if (m === leftPen) c.x = st.x - c.radius;
+              else if (m === rightPen) c.x = st.x + st.w + c.radius;
+              else if (m === topPen) c.y = st.y - c.radius;
+              else c.y = st.y + st.h + c.radius;
+            }
           }
+        }
+      }
+
+      if (state.chefs.length >= 2) {
+        const a = state.chefs[0];
+        const b = state.chefs[1];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy);
+        const minDist = a.radius + b.radius;
+        if (dist > 0.0001 && dist < minDist) {
+          const push = (minDist - dist) / 2;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          a.x -= nx * push;
+          a.y -= ny * push;
+          b.x += nx * push;
+          b.y += ny * push;
         }
       }
     }
@@ -1270,66 +1183,64 @@
       return best;
     }
 
-    function dropHoldingToFloorAt(tx, ty) {
-      const c = state.chef;
-      if (!c.holding) return false;
+    function dropHoldingToFloorAtForChef(chef, tx, ty) {
+      if (!chef || !chef.holding) return false;
       const gx = Math.max(26, Math.min(CANVAS_W - 26, tx));
       const gy = Math.max(106, Math.min(CANVAS_H - 26, ty));
       state.floorItems.push({
         id: Date.now() + Math.random(),
         x: gx,
         y: gy,
-        payload: JSON.parse(JSON.stringify(c.holding))
+        payload: JSON.parse(JSON.stringify(chef.holding))
       });
-      const label = c.holding.kind === 'single' ? ITEM_LABELS[c.holding.item] : '漢堡';
+      const label = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : '漢堡';
       spawnBurstParticles(gx, gy, '#FBBF24', 6);
-      c.holding = null;
-      showToast(`已將「${label}」丟在地上`);
+      chef.holding = null;
+      showToast(`${chef.tag} 將「${label}」丟在地上`);
       return true;
     }
 
-    function interactWithStation(st) {
-      const c = state.chef;
-      if (!st) return;
+    function interactWithStationForChef(chef, st) {
+      if (!chef || !st) return;
       const scx = st.x + st.w / 2;
       const scy = st.y + st.h / 2;
 
       if (st.type === 'crate') {
-        if (!c.holding) {
-          c.holding = { kind: 'single', item: st.item };
+        if (!chef.holding) {
+          chef.holding = { kind: 'single', item: st.item };
           spawnBurstParticles(scx, scy, '#FBBF24', 5);
-          showToast(`拿起 ${ITEM_LABELS[st.item]}`);
+          showToast(`${chef.tag} 拿起 ${ITEM_LABELS[st.item]}`);
         } else {
-          showToast('手上已有物品，先放下或丟到地上');
+          showToast(`${chef.tag} 手上已有物品`);
         }
       } else if (st.type === 'grill') {
-        if (!st.meatStatus && c.holding && c.holding.kind === 'single' && c.holding.item === 'raw_meat') {
+        if (!st.meatStatus && chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'raw_meat') {
           st.meatStatus = 'raw_meat';
           st.cookProgress = 0;
           st.overcookSec = 0;
-          c.holding = null;
+          chef.holding = null;
           spawnBurstParticles(scx, scy, '#FB7185', 6);
-          showToast('生肉排已放上煎台');
+          showToast(`${chef.tag} 將生肉排放上 ${st.label}`);
         } else if (st.meatStatus === 'patty' || st.meatStatus === 'burnt_meat') {
-          if (!c.holding) {
-            c.holding = { kind: 'single', item: st.meatStatus };
+          if (!chef.holding) {
+            chef.holding = { kind: 'single', item: st.meatStatus };
             const picked = ITEM_LABELS[st.meatStatus];
             st.meatStatus = null;
             st.cookProgress = 0;
             st.overcookSec = 0;
             spawnBurstParticles(scx, scy, '#D97706', 6);
-            showToast(`拿起${picked}`);
+            showToast(`${chef.tag} 拿起${picked}`);
           } else {
-            showToast('手上已有物品，先放下再拿肉排');
+            showToast(`${chef.tag} 手上已有物品`);
           }
         }
       } else if (st.type === 'board') {
-        if (!st.item && c.holding && c.holding.kind === 'single' && c.holding.item === 'raw_lettuce') {
+        if (!st.item && chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'raw_lettuce') {
           st.item = 'raw_lettuce';
           st.chops = 0;
-          c.holding = null;
-          showToast('放上整顆生菜，再按左鍵切菜');
-        } else if (st.item === 'raw_lettuce' && !c.holding) {
+          chef.holding = null;
+          showToast(`${chef.tag} 放上整顆生菜`);
+        } else if (st.item === 'raw_lettuce' && !chef.holding) {
           st.chops += 1;
           spawnBurstParticles(scx, scy, '#4ADE80', 6);
           if (st.chops >= 2) {
@@ -1338,60 +1249,60 @@
           } else {
             showToast(`切菜中（${st.chops}/2）`);
           }
-        } else if (st.item === 'lettuce' && !c.holding) {
-          c.holding = { kind: 'single', item: 'lettuce' };
+        } else if (st.item === 'lettuce' && !chef.holding) {
+          chef.holding = { kind: 'single', item: 'lettuce' };
           st.item = null;
           st.chops = 0;
-          showToast('拿起切絲生菜');
+          showToast(`${chef.tag} 拿起切絲生菜`);
         }
       } else if (st.type === 'assembly') {
-        const norm = normalizePayloadForAssembly(c.holding);
+        const norm = normalizePayloadForAssembly(chef.holding);
         if (norm && norm.kind === 'single') {
           st.stack.push(norm.item);
           const addedName = ITEM_LABELS[norm.item];
-          c.holding = null;
+          chef.holding = null;
           spawnBurstParticles(scx, scy, '#FACC15', 7);
-          showToast(`已將「${addedName}」疊上漢堡（共 ${st.stack.length} 層）`);
+          showToast(`${chef.tag} 疊上「${addedName}」（${st.stack.length} 層）`);
         } else if (norm && norm.kind === 'burger') {
           if (st.stack.length === 0) {
             st.stack = [...norm.items];
-            c.holding = null;
-            showToast('已將漢堡放回組裝台');
+            chef.holding = null;
+            showToast(`${chef.tag} 將漢堡放回組裝台`);
           } else {
             st.stack.push(...norm.items);
-            c.holding = null;
+            chef.holding = null;
             spawnBurstParticles(scx, scy, '#FACC15', 7);
-            showToast(`已合併疊上漢堡（共 ${st.stack.length} 層）`);
+            showToast(`${chef.tag} 合併疊上漢堡（${st.stack.length} 層）`);
           }
-        } else if (!c.holding && st.stack.length > 0) {
-          c.holding = { kind: 'burger', items: [...st.stack] };
+        } else if (!chef.holding && st.stack.length > 0) {
+          chef.holding = { kind: 'burger', items: [...st.stack] };
           st.stack = [];
-          showToast('端起漢堡，去輸送帶出餐吧！');
-        } else if (c.holding && c.holding.kind === 'single' && c.holding.item === 'burnt_meat') {
-          showToast('焦黑廢肉不能疊進漢堡，請丟進垃圾桶');
+          showToast(`${chef.tag} 端起漢堡，去輸送帶出餐！`);
+        } else if (chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'burnt_meat') {
+          showToast('焦黑廢肉不能疊進漢堡，請丟垃圾桶');
         }
       } else if (st.type === 'counter') {
-        if (!st.item && c.holding && c.holding.kind === 'single') {
-          st.item = c.holding.item;
+        if (!st.item && chef.holding && chef.holding.kind === 'single') {
+          st.item = chef.holding.item;
           const putName = ITEM_LABELS[st.item];
-          c.holding = null;
-          showToast(`放在置物檯面：${putName}`);
-        } else if (st.item && !c.holding) {
-          c.holding = { kind: 'single', item: st.item };
+          chef.holding = null;
+          showToast(`${chef.tag} 放在檯面：${putName}`);
+        } else if (st.item && !chef.holding) {
+          chef.holding = { kind: 'single', item: st.item };
           const takeName = ITEM_LABELS[st.item];
           st.item = null;
-          showToast(`從檯面拿起：${takeName}`);
+          showToast(`${chef.tag} 拿起檯面：${takeName}`);
         }
       } else if (st.type === 'trash') {
-        if (c.holding) {
-          c.holding = null;
+        if (chef.holding) {
+          chef.holding = null;
           spawnBurstParticles(scx, scy, '#EF4444', 6);
-          showToast('已丟進垃圾桶');
+          showToast(`${chef.tag} 已丟進垃圾桶`);
         }
       } else if (st.type === 'conveyor') {
-        if (c.holding && c.holding.kind === 'burger' && c.holding.items.length > 0) {
-          serveBurgerItems(c.holding.items, scx, scy);
-          c.holding = null;
+        if (chef.holding && chef.holding.kind === 'burger' && chef.holding.items.length > 0) {
+          serveBurgerItems(chef.holding.items, scx, scy);
+          chef.holding = null;
         } else {
           showToast('請先端起疊好的漢堡再放到輸送帶');
         }
@@ -1400,22 +1311,43 @@
       updateHoldingHud();
     }
 
+    function triggerActionForChef(chef) {
+      if (!chef) return;
+      const near = findNearbyStation(chef.x, chef.y, 64);
+      if (near) {
+        interactWithStationForChef(chef, near);
+      } else if (chef.holding) {
+        dropHoldingToFloorAtForChef(chef, chef.x + Math.cos(chef.angle) * 28, chef.y + Math.sin(chef.angle) * 28);
+      } else {
+        const fl = findNearbyFloorItem(chef.x, chef.y, 44);
+        if (fl) {
+          chef.holding = JSON.parse(JSON.stringify(fl.payload));
+          state.floorItems = state.floorItems.filter(item => item.id !== fl.id);
+          const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : '漢堡';
+          showToast(`${chef.tag} 撿起地上的「${name}」`);
+          updateHoldingHud();
+        }
+      }
+    }
+
     function handleCanvasClick(e) {
       if (state.paused || document.getElementById('screenGame').classList.contains('hidden')) return;
+      const p1 = state.chefs[0];
+      if (!p1) return;
       const canvas = document.getElementById('kitchenCanvas');
       const rect = canvas.getBoundingClientRect();
       const clickX = ((e.clientX - rect.left) / rect.width) * CANVAS_W;
       const clickY = ((e.clientY - rect.top) / rect.height) * CANVAS_H;
 
-      state.chef.angle = Math.atan2(clickY - state.chef.y, clickX - state.chef.x);
+      p1.angle = Math.atan2(clickY - p1.y, clickX - p1.x);
 
       const clickedFloor = state.floorItems.find(fi => Math.hypot(clickX - fi.x, clickY - fi.y) <= 32);
       if (clickedFloor) {
-        const previousHolding = state.chef.holding ? JSON.parse(JSON.stringify(state.chef.holding)) : null;
-        state.chef.x = clickedFloor.x;
-        state.chef.y = clickedFloor.y;
-        resolveStationCollisions();
-        state.chef.holding = JSON.parse(JSON.stringify(clickedFloor.payload));
+        const previousHolding = p1.holding ? JSON.parse(JSON.stringify(p1.holding)) : null;
+        p1.x = clickedFloor.x;
+        p1.y = clickedFloor.y;
+        resolveChefCollisions();
+        p1.holding = JSON.parse(JSON.stringify(clickedFloor.payload));
         state.floorItems = state.floorItems.filter(item => item.id !== clickedFloor.id);
         if (previousHolding) {
           state.floorItems.push({
@@ -1425,9 +1357,9 @@
             payload: previousHolding
           });
         }
-        const name = state.chef.holding.kind === 'single' ? ITEM_LABELS[state.chef.holding.item] : '漢堡';
+        const name = p1.holding.kind === 'single' ? ITEM_LABELS[p1.holding.item] : '漢堡';
         spawnBurstParticles(clickedFloor.x, clickedFloor.y, '#38BDF8', 6);
-        showToast(`從地上撿起「${name}」`);
+        showToast(`P1 從地上撿起「${name}」`);
         updateHoldingHud();
         return;
       }
@@ -1437,37 +1369,37 @@
       );
 
       if (clickedStation) {
-        const dEdge = distToRectEdge(state.chef.x, state.chef.y, clickedStation);
+        const dEdge = distToRectEdge(p1.x, p1.y, clickedStation);
         if (dEdge <= 78) {
-          interactWithStation(clickedStation);
+          interactWithStationForChef(p1, clickedStation);
         } else {
           const cx = clickedStation.x + clickedStation.w / 2;
           const cy = clickedStation.y + clickedStation.h / 2;
-          const ang = Math.atan2(state.chef.y - cy, state.chef.x - cx);
-          const standX = Math.max(clickedStation.x - state.chef.radius - 8, Math.min(clickedStation.x + clickedStation.w + state.chef.radius + 8, cx + Math.cos(ang) * (clickedStation.w / 2 + state.chef.radius + 10)));
-          const standY = Math.max(clickedStation.y - state.chef.radius - 8, Math.min(clickedStation.y + clickedStation.h + state.chef.radius + 8, cy + Math.sin(ang) * (clickedStation.h / 2 + state.chef.radius + 10)));
-          state.chef.x = standX;
-          state.chef.y = standY;
-          resolveStationCollisions();
-          interactWithStation(clickedStation);
+          const ang = Math.atan2(p1.y - cy, p1.x - cx);
+          const standX = Math.max(clickedStation.x - p1.radius - 8, Math.min(clickedStation.x + clickedStation.w + p1.radius + 8, cx + Math.cos(ang) * (clickedStation.w / 2 + p1.radius + 10)));
+          const standY = Math.max(clickedStation.y - p1.radius - 8, Math.min(clickedStation.y + clickedStation.h + p1.radius + 8, cy + Math.sin(ang) * (clickedStation.h / 2 + p1.radius + 10)));
+          p1.x = standX;
+          p1.y = standY;
+          resolveChefCollisions();
+          interactWithStationForChef(p1, clickedStation);
         }
         return;
       }
 
-      if (state.chef.holding) {
-        dropHoldingToFloorAt(clickX, clickY);
+      if (p1.holding) {
+        dropHoldingToFloorAtForChef(p1, clickX, clickY);
         return;
       }
 
-      state.chef.x = clickX;
-      state.chef.y = clickY;
-      resolveStationCollisions();
-      const nearFloor = findNearbyFloorItem(state.chef.x, state.chef.y, 44);
-      if (nearFloor && !state.chef.holding) {
-        state.chef.holding = JSON.parse(JSON.stringify(nearFloor.payload));
+      p1.x = clickX;
+      p1.y = clickY;
+      resolveChefCollisions();
+      const nearFloor = findNearbyFloorItem(p1.x, p1.y, 44);
+      if (nearFloor && !p1.holding) {
+        p1.holding = JSON.parse(JSON.stringify(nearFloor.payload));
         state.floorItems = state.floorItems.filter(item => item.id !== nearFloor.id);
-        const name = state.chef.holding.kind === 'single' ? ITEM_LABELS[state.chef.holding.item] : '漢堡';
-        showToast(`撿起地上的「${name}」`);
+        const name = p1.holding.kind === 'single' ? ITEM_LABELS[p1.holding.item] : '漢堡';
+        showToast(`P1 撿起地上的「${name}」`);
       }
       updateHoldingHud();
     }
@@ -1483,7 +1415,8 @@
       if (matchIdx !== -1) {
         const matched = state.orders[matchIdx];
         state.orders.splice(matchIdx, 1);
-        const bonus = Math.round(matched.price * (1 + (state.combo - 1) * 0.25));
+        const coopMult = state.mode === 'duo' ? 1.15 : 1;
+        const bonus = Math.round(matched.price * (1 + (state.combo - 1) * 0.25) * coopMult);
         state.score += bonus;
         state.combo += 1;
         state.maxCombo = Math.max(state.maxCombo, state.combo);
@@ -1507,30 +1440,52 @@
       renderHud();
     }
 
+    function moveSingleChef(chef, vx, vy, dt) {
+      if (!chef) return;
+      if (vx !== 0 || vy !== 0) {
+        const len = Math.hypot(vx, vy);
+        chef.x += (vx / len) * chef.speed * dt;
+        chef.y += (vy / len) * chef.speed * dt;
+        chef.angle = Math.atan2(vy, vx);
+        chef.walkPhase += dt * 13;
+      } else {
+        chef.walkPhase = 0;
+      }
+    }
+
     function gameLoop(now) {
       const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
       lastFrameTime = now;
 
       if (!state.paused && !document.getElementById('screenGame').classList.contains('hidden')) {
-        let vx = 0;
-        let vy = 0;
-        if (state.keys['w'] || state.keys['arrowup']) vy -= 1;
-        if (state.keys['s'] || state.keys['arrowdown']) vy += 1;
-        if (state.keys['a'] || state.keys['arrowleft']) vx -= 1;
-        if (state.keys['d'] || state.keys['arrowright']) vx += 1;
+        const p1 = state.chefs[0];
+        const p2 = state.chefs[1];
 
-        if (vx !== 0 || vy !== 0) {
-          const len = Math.hypot(vx, vy);
-          vx /= len;
-          vy /= len;
-          state.chef.x += vx * state.chef.speed * dt;
-          state.chef.y += vy * state.chef.speed * dt;
-          state.chef.angle = Math.atan2(vy, vx);
-          state.chef.walkPhase += dt * 13;
-          resolveStationCollisions();
-        } else {
-          state.chef.walkPhase = 0;
+        let p1vx = 0;
+        let p1vy = 0;
+        if (state.keys['w']) p1vy -= 1;
+        if (state.keys['s']) p1vy += 1;
+        if (state.keys['a']) p1vx -= 1;
+        if (state.keys['d']) p1vx += 1;
+        if (state.mode === 'solo') {
+          if (state.keys['arrowup']) p1vy -= 1;
+          if (state.keys['arrowdown']) p1vy += 1;
+          if (state.keys['arrowleft']) p1vx -= 1;
+          if (state.keys['arrowright']) p1vx += 1;
         }
+        moveSingleChef(p1, p1vx, p1vy, dt);
+
+        if (state.mode === 'duo' && p2) {
+          let p2vx = 0;
+          let p2vy = 0;
+          if (state.keys['arrowup']) p2vy -= 1;
+          if (state.keys['arrowdown']) p2vy += 1;
+          if (state.keys['arrowleft']) p2vx -= 1;
+          if (state.keys['arrowright']) p2vx += 1;
+          moveSingleChef(p2, p2vx, p2vy, dt);
+        }
+
+        resolveChefCollisions();
 
         for (const st of state.stations) {
           if (st.type !== 'grill' || !st.meatStatus || st.meatStatus === 'burnt_meat') continue;
@@ -1692,6 +1647,101 @@
       ctx.restore();
     }
 
+    function drawSingleChef(ctx, c) {
+      const bob = c.walkPhase > 0 ? Math.abs(Math.sin(c.walkPhase)) * 3.5 : 0;
+      const swing = c.walkPhase > 0 ? Math.sin(c.walkPhase) * 4 : 0;
+      const skinHex = SKIN_COLORS[c.skin] || SKIN_COLORS.fair;
+      const shadeHex = SKIN_SHADES[c.skin] || SKIN_SHADES.fair;
+
+      ctx.save();
+      ctx.translate(c.x, c.y);
+
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath();
+      ctx.ellipse(0, 19, 19, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#334155';
+      ctx.strokeStyle = '#1A1A1A';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.ellipse(-7 + swing * 0.4, 15, 5.5, 3.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(7 - swing * 0.4, 15, 5.5, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.translate(0, -bob);
+
+      ctx.fillStyle = '#F8FAFC';
+      ctx.strokeStyle = '#1A1A1A';
+      ctx.lineWidth = 2.8;
+      ctx.beginPath();
+      ctx.arc(0, 3, c.radius * 0.92, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = skinHex;
+      ctx.beginPath();
+      ctx.arc(0, -3, c.radius * 0.84, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = shadeHex;
+      ctx.beginPath();
+      ctx.arc(0, -1, c.radius * 0.72, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.fill();
+
+      const lookX = Math.cos(c.angle) * 3;
+      const lookY = Math.sin(c.angle) * 2.5;
+      ctx.fillStyle = '#1A1A1A';
+      ctx.beginPath();
+      ctx.arc(-5.5 + lookX, -2.5 + lookY, 2.1, 0, Math.PI * 2);
+      ctx.arc(5.5 + lookX, -2.5 + lookY, 2.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#1A1A1A';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(lookX, 2.2 + lookY * 0.6, 3.8, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.arc(0, -14, 12.5, Math.PI, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = c.band;
+      drawRoundRect(ctx, -12, -16, 24, 5.5, 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = c.tag === 'P1' ? '#2563EB' : '#0D9488';
+      ctx.fillText(c.tag, 0, -23);
+
+      ctx.fillStyle = c.tag === 'P1' ? '#2563EB' : '#0D9488';
+      ctx.beginPath();
+      ctx.arc(Math.cos(c.angle) * 25, Math.sin(c.angle) * 25, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      if (c.holding) {
+        if (c.holding.kind === 'single') {
+          drawItemMini(ctx, c.holding.item, 0, -36, 1.0);
+        } else {
+          c.holding.items.forEach((k, idx) => {
+            drawItemMini(ctx, k, 0, -32 - idx * 5.5, 0.88);
+          });
+        }
+      }
+
+      ctx.restore();
+    }
+
     function drawKitchenCanvas(t) {
       const canvas = document.getElementById('kitchenCanvas');
       const ctx = canvas.getContext('2d');
@@ -1752,10 +1802,14 @@
         ctx.restore();
       }
 
-      const nearbySt = findNearbyStation(state.chef.x, state.chef.y, 64);
+      const nearSet = new Set();
+      for (const c of state.chefs) {
+        const st = findNearbyStation(c.x, c.y, 64);
+        if (st) nearSet.add(st.id);
+      }
 
       for (const st of state.stations) {
-        const isNear = nearbySt && nearbySt.id === st.id;
+        const isNear = nearSet.has(st.id);
         ctx.save();
 
         ctx.fillStyle = 'rgba(26, 26, 26, 0.22)';
@@ -1890,94 +1944,9 @@
         ctx.restore();
       }
 
-      const c = state.chef;
-      const bob = c.walkPhase > 0 ? Math.abs(Math.sin(c.walkPhase)) * 3.5 : 0;
-      const swing = c.walkPhase > 0 ? Math.sin(c.walkPhase) * 4 : 0;
-      const skinHex = SKIN_COLORS[state.skin] || SKIN_COLORS.fair;
-      const shadeHex = SKIN_SHADES[state.skin] || SKIN_SHADES.fair;
-
-      ctx.save();
-      ctx.translate(c.x, c.y);
-
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
-      ctx.beginPath();
-      ctx.ellipse(0, 19, 19, 8, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#334155';
-      ctx.strokeStyle = '#1A1A1A';
-      ctx.lineWidth = 2.2;
-      ctx.beginPath();
-      ctx.ellipse(-7 + swing * 0.4, 15, 5.5, 3.5, 0, 0, Math.PI * 2);
-      ctx.ellipse(7 - swing * 0.4, 15, 5.5, 3.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.translate(0, -bob);
-
-      ctx.fillStyle = '#F8FAFC';
-      ctx.strokeStyle = '#1A1A1A';
-      ctx.lineWidth = 2.8;
-      ctx.beginPath();
-      ctx.arc(0, 3, c.radius * 0.92, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = skinHex;
-      ctx.beginPath();
-      ctx.arc(0, -3, c.radius * 0.84, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = shadeHex;
-      ctx.beginPath();
-      ctx.arc(0, -1, c.radius * 0.72, 0.15 * Math.PI, 0.85 * Math.PI);
-      ctx.fill();
-
-      const lookX = Math.cos(c.angle) * 3;
-      const lookY = Math.sin(c.angle) * 2.5;
-      ctx.fillStyle = '#1A1A1A';
-      ctx.beginPath();
-      ctx.arc(-5.5 + lookX, -2.5 + lookY, 2.1, 0, Math.PI * 2);
-      ctx.arc(5.5 + lookX, -2.5 + lookY, 2.1, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = '#1A1A1A';
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      ctx.arc(lookX, 2.2 + lookY * 0.6, 3.8, 0.15 * Math.PI, 0.85 * Math.PI);
-      ctx.stroke();
-
-      ctx.fillStyle = '#FFFFFF';
-      ctx.lineWidth = 2.6;
-      ctx.beginPath();
-      ctx.arc(0, -14, 12.5, Math.PI, 0);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = state.band;
-      drawRoundRect(ctx, -12, -16, 24, 5.5, 2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#2563EB';
-      ctx.beginPath();
-      ctx.arc(Math.cos(c.angle) * 25, Math.sin(c.angle) * 25, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      if (c.holding) {
-        if (c.holding.kind === 'single') {
-          drawItemMini(ctx, c.holding.item, 0, -31, 1.0);
-        } else {
-          c.holding.items.forEach((k, idx) => {
-            drawItemMini(ctx, k, 0, -27 - idx * 5.5, 0.88);
-          });
-        }
+      for (const c of state.chefs) {
+        drawSingleChef(ctx, c);
       }
-
-      ctx.restore();
     }
 
     function togglePause() {
@@ -2002,6 +1971,7 @@
       openModal(`
         <h3 style="margin-top:0;">營業結算成績單</h3>
         <p style="font-size:1.5rem;font-weight:950;color:var(--diner-red);margin:6px 0;">主廚評價：${stars}</p>
+        <p style="font-weight:800;">模式：${state.mode === 'duo' ? '雙人合作模式' : '單人遊玩'}</p>
         <p style="font-weight:800;">總營業額：$${state.score}</p>
         <p style="font-weight:800;">完成訂單：${state.servedCount} 份</p>
         <p style="font-weight:800;">最高連擊：x${state.maxCombo}</p>
@@ -2014,11 +1984,10 @@
 
     function openHelpModal() {
       openModal(`
-        <h3 style="margin-top:0;">Crazy COOK V1.8 操作說明</h3>
+        <h3 style="margin-top:0;">Crazy COOK V1.9 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
-          <li><strong>自由移動：</strong>按住 <code>WASD</code> 或方向鍵在廚房無格線平滑走動。</li>
-          <li><strong>左鍵拿取／放下／丟地上：</strong>點食材箱、煎台、砧板、組裝台或置物檯面按左鍵拿取或放下；手上拿著物品點空白地板會丟在地上，點地上物品可撿起。</li>
-          <li><strong>漢堡堆疊與出餐：</strong>把麵包、煎好的熟肉排、切絲生菜、起司、番茄依序用左鍵疊上「漢堡組裝台」，再端去右側「送餐輸送帶」左鍵出餐。</li>
+          <li><strong>單人遊玩：</strong><code>WASD</code> 或 <code>方向鍵</code> 移動，<code>Space</code> 或<strong>滑鼠左鍵</strong>拿取／放下／切菜／丟地上。</li>
+          <li><strong>雙人合作模式：</strong><strong>P1</strong> 使用 <code>WASD</code> 移動 + <code>Space</code> 互動/丟地（也可用滑鼠左鍵）；<strong>P2</strong> 使用 <code>方向鍵</code> 移動 + <code>Enter</code> 互動/丟地。兩人共享訂單、煎台、組裝台與輸送帶！</li>
         </ol>
         <div style="text-align:right;margin-top:14px;">
           <button class="btn btn-mint" onclick="closeModal()">知道了</button>
@@ -2043,21 +2012,14 @@
     window.addEventListener('keydown', e => {
       const k = e.key.toLowerCase();
       state.keys[k] = true;
-      if (!document.getElementById('screenGame').classList.contains('hidden') && !state.paused && e.code === 'Space') {
+      if (document.getElementById('screenGame').classList.contains('hidden') || state.paused) return;
+
+      if (e.code === 'Space') {
         e.preventDefault();
-        const near = findNearbyStation(state.chef.x, state.chef.y, 64);
-        if (near) {
-          interactWithStation(near);
-        } else if (state.chef.holding) {
-          dropHoldingToFloorAt(state.chef.x + Math.cos(state.chef.angle) * 28, state.chef.y + Math.sin(state.chef.angle) * 28);
-        } else {
-          const fl = findNearbyFloorItem(state.chef.x, state.chef.y, 44);
-          if (fl) {
-            state.chef.holding = JSON.parse(JSON.stringify(fl.payload));
-            state.floorItems = state.floorItems.filter(item => item.id !== fl.id);
-            updateHoldingHud();
-          }
-        }
+        triggerActionForChef(state.chefs[0]);
+      } else if (e.key === 'Enter' && state.mode === 'duo' && state.chefs[1]) {
+        e.preventDefault();
+        triggerActionForChef(state.chefs[1]);
       }
     });
 
