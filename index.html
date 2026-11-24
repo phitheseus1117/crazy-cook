@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crazy COOK — 美式復古快餐廚房 V1.9</title>
+  <title>Crazy COOK — 美式復古快餐廚房 V2.0</title>
   <style>
     :root {
       --bg-cream: #FFF8E7;
@@ -269,6 +269,24 @@
     .mode-card.solo { background: linear-gradient(180deg, #F0FDFA 0%, #CCFBF1 100%); }
     .mode-card.multi { background: linear-gradient(180deg, #FFFBEB 0%, #FEF08A 100%); }
 
+    .lobby-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .code-input {
+      width: 100%;
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 8px;
+      text-align: center;
+      padding: 10px;
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+
     .players-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -305,6 +323,19 @@
     .player-slot.ready .status-pill {
       background: #22C55E;
       color: #FFF;
+    }
+
+    .link-banner {
+      background: #EFF6FF;
+      border: 2.5px solid var(--ink);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
     }
 
     .hud-bar {
@@ -458,7 +489,7 @@
     <div class="brand-badge">
       <span class="brand-icon-box" id="topLogoIcon"></span>
       <span>CRAZY COOK</span>
-      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V1.9</span>
+      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V2.0</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-light" onclick="openHelpModal()">玩法與操作說明</button>
@@ -473,13 +504,13 @@
       <div class="signboard">
         <div class="signboard-tag">★ EST. 1955 · ROUTE 66 DINER ★</div>
         <h1>Crazy COOK</h1>
-        <p style="margin:6px 0 0;font-weight:700;">美式快餐大作戰 · 單人挑戰 × 雙人同機合作（P1 WASD+Space / P2 方向鍵+Enter）！</p>
+        <p style="margin:6px 0 0;font-weight:700;">美式快餐大作戰 · 單人遊玩 × 4 碼房號聯機合作（同機雙人 + 跨分頁即時聯機）！</p>
       </div>
 
       <div class="name-row">
         <span style="display:inline-flex;align-items:center;gap:6px;font-weight:900;">
           <span id="nameTagIcon"></span>
-          <span>主廚代號（P1）：</span>
+          <span>主廚代號：</span>
         </span>
         <input id="playerNameInput" type="text" maxlength="12" value="漢堡小當家" placeholder="輸入你的主廚名稱" />
         <span style="font-size:0.85rem;font-weight:800;color:#444;">最高營業額：$<span id="bestScoreDisplay">0</span></span>
@@ -532,27 +563,61 @@
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <span id="multiModeIcon"></span>
-              <span class="status-pill" style="background:var(--diner-red);color:#FFF;">2 PLAYERS CO-OP</span>
+              <span class="status-pill" style="background:var(--diner-red);color:#FFF;">ROOM LINK</span>
             </div>
-            <h2 style="margin:0 0 8px;font-size:1.45rem;">雙人合作模式</h2>
-            <p style="margin:0;font-weight:700;line-height:1.5;">兩位主廚同場分工合作！P1 用 <strong>WASD + Space</strong>，P2 用 <strong>方向鍵 + Enter</strong>（或滑鼠點擊），共享訂單、煎台與組裝台。</p>
+            <h2 style="margin:0 0 8px;font-size:1.45rem;">房號聯機合作</h2>
+            <p style="margin:0;font-weight:700;line-height:1.5;">創立 4 碼房間或輸入房號加入！支援同機雙人與同一瀏覽器跨分頁即時同步狀態（走位、煎台、組裝台與出餐）。</p>
           </div>
-          <button class="btn btn-yellow" onclick="startDuoLobby()">進入雙人準備室 →</button>
+          <button class="btn btn-yellow" onclick="openRoomSelect()">創立 / 輸入房號聯機 →</button>
         </div>
       </div>
     </section>
 
-    <!-- 準備大廳 -->
+    <!-- 第二層：創立房號 / 輸入房號 -->
+    <section id="screenRoomSelect" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+        <button class="btn btn-light" onclick="goScreen('screenMenu')">← 返回主選單</button>
+        <h2 style="margin:0;font-size:1.4rem;">房號聯機大廳 — 創立或加入房間</h2>
+      </div>
+
+      <div class="lobby-grid">
+        <div class="card" style="background:#FFF8E7;">
+          <h3 style="margin-top:0;">創立新聯機房間</h3>
+          <p style="font-weight:700;color:#444;">產生 4 碼房號建立聯機頻道，可開另一個分頁輸入相同房號聯機，或同機雙人一起玩。</p>
+          <button class="btn btn-red" style="width:100%;" onclick="createLinkedRoom()">立即建立房間並產生 4 碼房號</button>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0;">輸入 4 碼房間號加入</h3>
+          <p style="font-weight:700;color:#444;">輸入已建立的 4 碼房號進入同一間聯機準備室，同步大廳與廚房狀態。</p>
+          <input id="joinCodeInput" class="code-input" type="text" maxlength="4" placeholder="例如 5888" />
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+            <button class="btn btn-blue" style="flex:1;" onclick="joinLinkedRoom()">加入房間聯機</button>
+            <button class="btn btn-light" onclick="fillDemoCode()">填入 #5888</button>
+          </div>
+          <p id="roomErrorMsg" style="color:var(--diner-red);font-weight:900;margin:10px 0 0;min-height:22px;"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第三層：聯機準備大廳 -->
     <section id="screenReady" class="hidden">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-bottom:3px solid var(--ink);padding-bottom:12px;">
           <div>
-            <span id="roomModeTag" class="status-pill" style="background:var(--mustard);">單人模式</span>
+            <span id="roomModeTag" class="status-pill" style="background:var(--mustard);">聯機模式</span>
             <h2 style="margin:6px 0 0;">準備室 — <span id="roomCodeBadge">SOLO</span></h2>
           </div>
           <div style="display:flex;gap:8px;">
-            <button class="btn btn-light" onclick="goScreen('screenMenu')">← 返回主選單</button>
+            <button class="btn btn-light" onclick="leaveRoomToSelect()">← 離開房間</button>
           </div>
+        </div>
+
+        <div id="linkStatusBanner" class="link-banner hidden">
+          <div style="font-weight:800;font-size:0.88rem;" id="linkStatusText">
+            聯機頻道已連線：同瀏覽器開啟新分頁輸入相同房號即可即時同步；也可直接在同畫面切換 P1 / P2 準備。
+          </div>
+          <button class="btn btn-light" style="padding:6px 12px;font-size:0.84rem;" onclick="openNewTabForRoom()">+ 開啟新分頁測試聯機</button>
         </div>
 
         <div id="playersGrid" class="players-grid"></div>
@@ -560,12 +625,12 @@
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:14px;border-top:3px solid var(--ink);">
           <div>
             <div style="font-weight:900;" id="readySummaryText">準備狀態確認中...</div>
-            <div style="font-size:0.85rem;font-weight:700;color:#555;" id="readySubHint">確認主廚設定後即可開始營業！</div>
+            <div style="font-size:0.85rem;font-weight:700;color:#555;" id="readySubHint">所有在場主廚按下「已準備」後即可開始營業！</div>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn btn-mint" id="toggleMyReadyBtn" onclick="toggleP1Ready()">P1 已準備</button>
-            <button class="btn btn-blue hidden" id="toggleP2ReadyBtn" onclick="toggleP2Ready()">P2 已準備</button>
-            <button class="btn btn-red" id="startGameBtn" disabled onclick="beginCountdown()">開始營業！</button>
+            <button class="btn btn-mint" id="toggleP1ReadyBtn" onclick="toggleSeatReady('p1')">P1 準備</button>
+            <button class="btn btn-blue hidden" id="toggleP2ReadyBtn" onclick="toggleSeatReady('p2')">P2 準備</button>
+            <button class="btn btn-red" id="startGameBtn" disabled onclick="startRoomGame()">開始營業！</button>
           </div>
         </div>
       </div>
@@ -631,6 +696,8 @@
       bandName: '紅',
       soundOn: true,
       mode: 'solo',
+      roomCode: null,
+      clientId: 'cli_' + Math.random().toString(36).slice(2, 8),
       players: [],
       timeLeft: 90,
       score: 0,
@@ -639,6 +706,7 @@
       maxCombo: 1,
       servedCount: 0,
       paused: false,
+      gameStarted: false,
       orders: [],
       chefs: [],
       keys: {},
@@ -652,6 +720,9 @@
 
     const CANVAS_W = 960;
     const CANVAS_H = 540;
+
+    let broadcastChannel = null;
+    let lastSyncPushTime = 0;
 
     const RECIPES = [
       { id: 'classic', name: '經典美式起司堡', price: 120, items: ['bun', 'patty', 'cheese', 'bun'] },
@@ -789,14 +860,140 @@
     }
 
     function goScreen(id) {
-      ['screenMenu', 'screenReady', 'screenGame'].forEach(sec => {
+      ['screenMenu', 'screenRoomSelect', 'screenReady', 'screenGame'].forEach(sec => {
         document.getElementById(sec).classList.toggle('hidden', sec !== id);
       });
     }
 
+    function attachRoomChannel(code) {
+      if (broadcastChannel) {
+        broadcastChannel.close();
+        broadcastChannel = null;
+      }
+      if (!code || state.mode !== 'room') return;
+
+      const chName = `crazy_cook_room_${code}`;
+      if ('BroadcastChannel' in window) {
+        broadcastChannel = new BroadcastChannel(chName);
+        broadcastChannel.onmessage = (ev) => {
+          const msg = ev.data;
+          if (!msg || msg.sender === state.clientId) return;
+          if (msg.type === 'lobby_sync' && msg.players) {
+            state.players = msg.players;
+            renderReadyPlayers();
+          } else if (msg.type === 'game_start' && msg.snapshot) {
+            applyRemoteSnapshot(msg.snapshot, true);
+          } else if (msg.type === 'state_sync' && msg.snapshot) {
+            applyRemoteSnapshot(msg.snapshot, false);
+          }
+        };
+      }
+
+      const storageKey = `crazy_cook_sync_${code}`;
+      const existingRaw = localStorage.getItem(storageKey);
+      if (existingRaw) {
+        try {
+          const parsed = JSON.parse(existingRaw);
+          if (parsed && parsed.sender !== state.clientId && parsed.players) {
+            state.players = parsed.players;
+          }
+        } catch (err) {}
+      }
+    }
+
+    function pushLobbyState() {
+      if (state.mode !== 'room' || !state.roomCode) return;
+      const payload = {
+        type: 'lobby_sync',
+        sender: state.clientId,
+        roomCode: state.roomCode,
+        players: state.players,
+        ts: Date.now()
+      };
+      if (broadcastChannel) broadcastChannel.postMessage(payload);
+      try {
+        localStorage.setItem(`crazy_cook_sync_${state.roomCode}`, JSON.stringify(payload));
+      } catch (err) {}
+    }
+
+    function pushGameSnapshot(forceStart = false) {
+      if (state.mode !== 'room' || !state.roomCode) return;
+      const now = performance.now();
+      if (!forceStart && now - lastSyncPushTime < 75) return;
+      lastSyncPushTime = now;
+
+      const snapshot = {
+        timeLeft: state.timeLeft,
+        score: state.score,
+        combo: state.combo,
+        maxCombo: state.maxCombo,
+        servedCount: state.servedCount,
+        orders: state.orders,
+        chefs: state.chefs,
+        stations: state.stations,
+        floorItems: state.floorItems
+      };
+
+      const msg = {
+        type: forceStart ? 'game_start' : 'state_sync',
+        sender: state.clientId,
+        roomCode: state.roomCode,
+        snapshot,
+        ts: Date.now()
+      };
+      if (broadcastChannel) broadcastChannel.postMessage(msg);
+      try {
+        localStorage.setItem(`crazy_cook_live_${state.roomCode}`, JSON.stringify(msg));
+      } catch (err) {}
+    }
+
+    function applyRemoteSnapshot(snap, enterGameScreen) {
+      if (!snap) return;
+      state.timeLeft = snap.timeLeft;
+      state.score = snap.score;
+      state.combo = snap.combo;
+      state.maxCombo = snap.maxCombo;
+      state.servedCount = snap.servedCount;
+      if (Array.isArray(snap.orders)) state.orders = snap.orders;
+      if (Array.isArray(snap.chefs)) state.chefs = snap.chefs;
+      if (Array.isArray(snap.stations)) state.stations = snap.stations;
+      if (Array.isArray(snap.floorItems)) state.floorItems = snap.floorItems;
+
+      if (enterGameScreen && !state.gameStarted) {
+        state.gameStarted = true;
+        goScreen('screenGame');
+        renderActiveChefs();
+      }
+      renderHud();
+      renderOrders();
+      updateHoldingHud();
+    }
+
+    window.addEventListener('storage', (e) => {
+      if (state.mode !== 'room' || !state.roomCode || !e.newValue) return;
+      if (e.key === `crazy_cook_sync_${state.roomCode}`) {
+        try {
+          const msg = JSON.parse(e.newValue);
+          if (msg && msg.sender !== state.clientId && msg.players) {
+            state.players = msg.players;
+            renderReadyPlayers();
+          }
+        } catch (err) {}
+      } else if (e.key === `crazy_cook_live_${state.roomCode}`) {
+        try {
+          const msg = JSON.parse(e.newValue);
+          if (msg && msg.sender !== state.clientId && msg.snapshot) {
+            applyRemoteSnapshot(msg.snapshot, msg.type === 'game_start');
+          }
+        } catch (err) {}
+      }
+    });
+
     function startSoloLobby() {
       syncPlayerName();
       state.mode = 'solo';
+      state.roomCode = null;
+      if (broadcastChannel) { broadcastChannel.close(); broadcastChannel = null; }
       state.players = [{
         id: 'p1',
         name: `${state.playerName} (P1)`,
@@ -807,58 +1004,89 @@
       }];
       document.getElementById('roomModeTag').textContent = '單人模式';
       document.getElementById('roomCodeBadge').textContent = '1P SOLO';
-      document.getElementById('toggleMyReadyBtn').textContent = 'P1 已準備';
+      document.getElementById('linkStatusBanner').classList.add('hidden');
+      document.getElementById('toggleP1ReadyBtn').textContent = 'P1 已準備';
       document.getElementById('toggleP2ReadyBtn').classList.add('hidden');
       document.getElementById('readySubHint').textContent = '單人模式已就緒，可隨時開始營業！';
       renderReadyPlayers();
       goScreen('screenReady');
     }
 
-    function startDuoLobby() {
+    function openRoomSelect() {
       syncPlayerName();
-      state.mode = 'duo';
+      document.getElementById('roomErrorMsg').textContent = '';
+      goScreen('screenRoomSelect');
+    }
+
+    function fillDemoCode() {
+      document.getElementById('joinCodeInput').value = '5888';
+    }
+
+    function enterRoomLobby(code, isCreator) {
+      syncPlayerName();
+      state.mode = 'room';
+      state.roomCode = code;
+      attachRoomChannel(code);
+
       const p2Band = state.band === '#2563EB' ? '#22C55E' : '#2563EB';
       const p2BandName = state.band === '#2563EB' ? '綠' : '藍';
-      state.players = [
-        {
-          id: 'p1',
-          name: `${state.playerName} (P1)`,
-          ready: true,
-          skin: state.skin,
-          band: state.band,
-          bandName: state.bandName
-        },
-        {
-          id: 'p2',
-          name: '二號主廚 (P2)',
-          ready: false,
-          skin: 'yellow',
-          band: p2Band,
-          bandName: p2BandName
-        }
-      ];
-      document.getElementById('roomModeTag').textContent = '雙人合作模式';
-      document.getElementById('roomCodeBadge').textContent = '2P CO-OP';
-      document.getElementById('toggleMyReadyBtn').textContent = '切換 P1 準備';
+
+      if (isCreator) {
+        state.players = [
+          { id: 'p1', name: `${state.playerName} (P1)`, ready: true, skin: state.skin, band: state.band, bandName: state.bandName },
+          { id: 'p2', name: '二號主廚 (P2)', ready: false, skin: 'yellow', band: p2Band, bandName: p2BandName }
+        ];
+      } else {
+        state.players = [
+          { id: 'p1', name: '房主主廚 (P1)', ready: true, skin: 'fair', band: '#E63946', bandName: '紅' },
+          { id: 'p2', name: `${state.playerName} (P2)`, ready: true, skin: state.skin, band: state.band, bandName: state.bandName }
+        ];
+      }
+
+      document.getElementById('roomModeTag').textContent = '房號聯機模式';
+      document.getElementById('roomCodeBadge').textContent = `房號 #${code}`;
+      document.getElementById('linkStatusBanner').classList.remove('hidden');
+      document.getElementById('linkStatusText').textContent =
+        `聯機房號 #${code} 已啟用：可開另一個分頁輸入 #${code} 跨分頁即時聯機，或同機雙人一起玩！`;
+      document.getElementById('toggleP1ReadyBtn').textContent = '切換 P1 準備';
       document.getElementById('toggleP2ReadyBtn').textContent = '切換 P2 準備';
       document.getElementById('toggleP2ReadyBtn').classList.remove('hidden');
       document.getElementById('readySubHint').textContent = 'P1（WASD + Space）與 P2（方向鍵 + Enter）皆準備後即可開局！';
+
       renderReadyPlayers();
+      pushLobbyState();
       goScreen('screenReady');
     }
 
-    function toggleP1Ready() {
-      const p1 = state.players.find(p => p.id === 'p1');
-      if (!p1) return;
-      p1.ready = !p1.ready;
-      renderReadyPlayers();
+    function createLinkedRoom() {
+      const code = String(Math.floor(1000 + Math.random() * 9000));
+      enterRoomLobby(code, true);
     }
 
-    function toggleP2Ready() {
-      const p2 = state.players.find(p => p.id === 'p2');
-      if (!p2) return;
-      p2.ready = !p2.ready;
+    function joinLinkedRoom() {
+      const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+      if (code.length < 4) {
+        document.getElementById('roomErrorMsg').textContent = '請輸入 4 碼房間號！';
+        return;
+      }
+      enterRoomLobby(code, false);
+    }
+
+    function openNewTabForRoom() {
+      window.open(window.location.href, '_blank');
+    }
+
+    function leaveRoomToSelect() {
+      if (broadcastChannel) { broadcastChannel.close(); broadcastChannel = null; }
+      goScreen(state.mode === 'room' ? 'screenRoomSelect' : 'screenMenu');
+    }
+
+    function toggleSeatReady(seatId) {
+      const target = state.players.find(p => p.id === seatId);
+      if (!target) return;
+      target.ready = !target.ready;
       renderReadyPlayers();
+      pushLobbyState();
     }
 
     function renderReadyPlayers() {
@@ -880,7 +1108,7 @@
       const allReady = state.players.length > 0 && state.players.every(p => p.ready);
       document.getElementById('startGameBtn').disabled = !allReady;
       document.getElementById('readySummaryText').textContent = allReady
-        ? `全員已確認（${state.players.length} 人），可以開始營業！`
+        ? `房號 ${state.roomCode || 'SOLO'} 全員已確認，可以開始營業！`
         : `目前 ${state.players.filter(p => p.ready).length} / ${state.players.length} 人已準備`;
     }
 
@@ -911,14 +1139,14 @@
       state.beltFlashTimer = 0;
 
       const p1Cfg = state.players[0] || { name: `${state.playerName} (P1)`, skin: state.skin, band: state.band, bandName: state.bandName };
-      if (state.mode === 'duo') {
+      if (state.mode === 'room') {
         const p2Cfg = state.players[1] || { name: '二號主廚 (P2)', skin: 'yellow', band: '#2563EB', bandName: '藍' };
         state.chefs = [
           { id: 'p1', tag: 'P1', name: p1Cfg.name, skin: p1Cfg.skin, band: p1Cfg.band, x: 410, y: 300, radius: 21, speed: 255, angle: -Math.PI / 2, walkPhase: 0, holding: null },
           { id: 'p2', tag: 'P2', name: p2Cfg.name, skin: p2Cfg.skin, band: p2Cfg.band, x: 550, y: 300, radius: 21, speed: 255, angle: -Math.PI / 2, walkPhase: 0, holding: null }
         ];
         document.getElementById('controlHintText').innerHTML =
-          `<span><strong>P1</strong>：<code>WASD</code> 移動 + <code>Space</code> 互動/丟地 · <strong>P2</strong>：<code>方向鍵</code> 移動 + <code>Enter</code> 互動/丟地 · <strong>滑鼠左鍵</strong> 可操控 P1</span>`;
+          `<span>房號 <strong>#${state.roomCode}</strong> · <strong>P1</strong>：<code>WASD</code> + <code>Space</code> · <strong>P2</strong>：<code>方向鍵</code> + <code>Enter</code></span>`;
         document.getElementById('holdingStatusP2').classList.remove('hidden');
       } else {
         state.chefs = [
@@ -977,14 +1205,20 @@
     let rafId = null;
     let lastFrameTime = 0;
 
+    function startRoomGame() {
+      beginCountdown();
+      pushGameSnapshot(true);
+    }
+
     function beginCountdown() {
-      state.timeLeft = state.mode === 'duo' ? 105 : 90;
+      state.timeLeft = state.mode === 'room' ? 105 : 90;
       state.score = 0;
       state.combo = 1;
       state.maxCombo = 1;
       state.servedCount = 0;
       state.paused = false;
-      state.orders = state.mode === 'duo' ? [generateOrder(), generateOrder(), generateOrder()] : [generateOrder(), generateOrder()];
+      state.gameStarted = true;
+      state.orders = state.mode === 'room' ? [generateOrder(), generateOrder(), generateOrder()] : [generateOrder(), generateOrder()];
       setupKitchen();
 
       goScreen('screenGame');
@@ -1004,7 +1238,7 @@
           finishGame();
           return;
         }
-        const maxOrders = state.mode === 'duo' ? 5 : 4;
+        const maxOrders = state.mode === 'room' ? 5 : 4;
         if (state.timeLeft % 14 === 0 && state.orders.length < maxOrders) {
           state.orders.push(generateOrder());
         }
@@ -1019,6 +1253,7 @@
         if (!state.orders.length) state.orders.push(generateOrder());
         renderHud();
         renderOrders();
+        pushGameSnapshot(false);
       }, 1000);
 
       lastFrameTime = performance.now();
@@ -1309,6 +1544,7 @@
       }
 
       updateHoldingHud();
+      pushGameSnapshot(false);
     }
 
     function triggerActionForChef(chef) {
@@ -1318,6 +1554,7 @@
         interactWithStationForChef(chef, near);
       } else if (chef.holding) {
         dropHoldingToFloorAtForChef(chef, chef.x + Math.cos(chef.angle) * 28, chef.y + Math.sin(chef.angle) * 28);
+        pushGameSnapshot(false);
       } else {
         const fl = findNearbyFloorItem(chef.x, chef.y, 44);
         if (fl) {
@@ -1326,6 +1563,7 @@
           const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : '漢堡';
           showToast(`${chef.tag} 撿起地上的「${name}」`);
           updateHoldingHud();
+          pushGameSnapshot(false);
         }
       }
     }
@@ -1361,6 +1599,7 @@
         spawnBurstParticles(clickedFloor.x, clickedFloor.y, '#38BDF8', 6);
         showToast(`P1 從地上撿起「${name}」`);
         updateHoldingHud();
+        pushGameSnapshot(false);
         return;
       }
 
@@ -1388,6 +1627,7 @@
 
       if (p1.holding) {
         dropHoldingToFloorAtForChef(p1, clickX, clickY);
+        pushGameSnapshot(false);
         return;
       }
 
@@ -1402,6 +1642,7 @@
         showToast(`P1 撿起地上的「${name}」`);
       }
       updateHoldingHud();
+      pushGameSnapshot(false);
     }
 
     function serveBurgerItems(items, fx, fy) {
@@ -1415,7 +1656,7 @@
       if (matchIdx !== -1) {
         const matched = state.orders[matchIdx];
         state.orders.splice(matchIdx, 1);
-        const coopMult = state.mode === 'duo' ? 1.15 : 1;
+        const coopMult = state.mode === 'room' ? 1.15 : 1;
         const bonus = Math.round(matched.price * (1 + (state.combo - 1) * 0.25) * coopMult);
         state.score += bonus;
         state.combo += 1;
@@ -1475,7 +1716,7 @@
         }
         moveSingleChef(p1, p1vx, p1vy, dt);
 
-        if (state.mode === 'duo' && p2) {
+        if (state.mode === 'room' && p2) {
           let p2vx = 0;
           let p2vy = 0;
           if (state.keys['arrowup']) p2vy -= 1;
@@ -1485,6 +1726,7 @@
           moveSingleChef(p2, p2vx, p2vy, dt);
         }
 
+        const moved = (p1vx !== 0 || p1vy !== 0) || (state.mode === 'room' && p2 && (state.keys['arrowup'] || state.keys['arrowdown'] || state.keys['arrowleft'] || state.keys['arrowright']));
         resolveChefCollisions();
 
         for (const st of state.stations) {
@@ -1517,6 +1759,10 @@
         if (state.toastTimer > 0) {
           state.toastTimer = Math.max(0, state.toastTimer - dt);
           if (state.toastTimer === 0) updateHoldingHud();
+        }
+
+        if (moved && state.mode === 'room') {
+          pushGameSnapshot(false);
         }
 
         drawKitchenCanvas(now / 1000);
@@ -1967,16 +2213,17 @@
     function finishGame() {
       clearInterval(gameTimerId);
       cancelAnimationFrame(rafId);
+      state.gameStarted = false;
       const stars = state.score >= 600 ? '★★★' : state.score >= 300 ? '★★☆' : '★☆☆';
       openModal(`
         <h3 style="margin-top:0;">營業結算成績單</h3>
         <p style="font-size:1.5rem;font-weight:950;color:var(--diner-red);margin:6px 0;">主廚評價：${stars}</p>
-        <p style="font-weight:800;">模式：${state.mode === 'duo' ? '雙人合作模式' : '單人遊玩'}</p>
+        <p style="font-weight:800;">模式：${state.mode === 'room' ? `房號 #${state.roomCode} 聯機合作` : '單人遊玩'}</p>
         <p style="font-weight:800;">總營業額：$${state.score}</p>
         <p style="font-weight:800;">完成訂單：${state.servedCount} 份</p>
         <p style="font-weight:800;">最高連擊：x${state.maxCombo}</p>
         <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;">
-          <button class="btn btn-yellow" onclick="closeModal();beginCountdown();">再玩一次</button>
+          <button class="btn btn-yellow" onclick="closeModal();startRoomGame();">再玩一次</button>
           <button class="btn btn-light" onclick="closeModal();goScreen('screenMenu');">回主選單</button>
         </div>
       `);
@@ -1984,10 +2231,10 @@
 
     function openHelpModal() {
       openModal(`
-        <h3 style="margin-top:0;">Crazy COOK V1.9 操作說明</h3>
+        <h3 style="margin-top:0;">Crazy COOK V2.0 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
           <li><strong>單人遊玩：</strong><code>WASD</code> 或 <code>方向鍵</code> 移動，<code>Space</code> 或<strong>滑鼠左鍵</strong>拿取／放下／切菜／丟地上。</li>
-          <li><strong>雙人合作模式：</strong><strong>P1</strong> 使用 <code>WASD</code> 移動 + <code>Space</code> 互動/丟地（也可用滑鼠左鍵）；<strong>P2</strong> 使用 <code>方向鍵</code> 移動 + <code>Enter</code> 互動/丟地。兩人共享訂單、煎台、組裝台與輸送帶！</li>
+          <li><strong>房號聯機合作：</strong>創立 4 碼房號或輸入房號加入（可同機雙人，也可開另一個分頁輸入相同房號跨分頁即時同步）。<strong>P1</strong> 用 <code>WASD</code> + <code>Space</code>，<strong>P2</strong> 用 <code>方向鍵</code> + <code>Enter</code>。</li>
         </ol>
         <div style="text-align:right;margin-top:14px;">
           <button class="btn btn-mint" onclick="closeModal()">知道了</button>
@@ -2017,7 +2264,7 @@
       if (e.code === 'Space') {
         e.preventDefault();
         triggerActionForChef(state.chefs[0]);
-      } else if (e.key === 'Enter' && state.mode === 'duo' && state.chefs[1]) {
+      } else if (e.key === 'Enter' && state.mode === 'room' && state.chefs[1]) {
         e.preventDefault();
         triggerActionForChef(state.chefs[1]);
       }
