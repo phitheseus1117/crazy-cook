@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crazy COOK — 美式復古快餐廚房 V2.3（雙裝置完整同步與結算）</title>
+  <title>Crazy COOK — 美式復古快餐廚房 V2.4（2～4 人連線與圖示化製作流程）</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root {
@@ -249,6 +249,29 @@
       outline-offset: 2px;
     }
 
+    .room-size-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .size-pill {
+      flex: 1;
+      padding: 9px 10px;
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      background: #FFF;
+      font-weight: 900;
+      font-size: 0.92rem;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+
+    .size-pill.active {
+      background: var(--mustard);
+      transform: translate(-1px, -1px);
+    }
+
     .mode-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
@@ -290,7 +313,7 @@
 
     .players-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
       gap: 14px;
       margin: 16px 0;
     }
@@ -306,6 +329,12 @@
       align-items: center;
       gap: 8px;
       text-align: center;
+    }
+
+    .player-slot.empty-seat {
+      border-style: dashed;
+      background: #F8FAFC;
+      color: #64748B;
     }
 
     .player-slot.ready {
@@ -380,7 +409,7 @@
     }
 
     .order-ticket {
-      min-width: 225px;
+      min-width: 245px;
       background: #FFFDF5;
       border: 3px solid var(--ink);
       border-top: 10px solid var(--diner-red);
@@ -388,6 +417,35 @@
       padding: 9px 12px;
       box-shadow: var(--shadow-sm);
       flex-shrink: 0;
+    }
+
+    .recipe-flow-icons {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+      background: #FFF8E7;
+      border: 2px solid #E5D7B8;
+      border-radius: 10px;
+      padding: 5px 7px;
+    }
+
+    .flow-step-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      background: #FFF;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+    }
+
+    .flow-arrow {
+      font-weight: 900;
+      font-size: 0.8rem;
+      color: #64748B;
     }
 
     .order-time-bar {
@@ -458,7 +516,6 @@
       cursor: crosshair;
     }
 
-    /* 手機觸控搖桿與互動按鈕（桌機可隱藏或輔助） */
     .touch-controls {
       display: flex;
       align-items: center;
@@ -538,7 +595,7 @@
     <div class="brand-badge">
       <span class="brand-icon-box" id="topLogoIcon"></span>
       <span>CRAZY COOK</span>
-      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V2.3</span>
+      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V2.4</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-light" onclick="openHelpModal()">玩法與操作說明</button>
@@ -553,7 +610,7 @@
       <div class="signboard">
         <div class="signboard-tag">★ EST. 1955 · ROUTE 66 DINER ★</div>
         <h1>Crazy COOK</h1>
-        <p style="margin:6px 0 0;font-weight:700;">美式快餐大作戰 · 雙裝置即時走位軌跡同步 ＋ 雙向結算再準備大廳！</p>
+        <p style="margin:6px 0 0;font-weight:700;">美式快餐大作戰 · 2～4 人自選房間人數連線 ＋ 圖示化製作流程！</p>
       </div>
 
       <div class="name-row">
@@ -612,33 +669,39 @@
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <span id="multiModeIcon"></span>
-              <span class="status-pill" style="background:var(--diner-red);color:#FFF;">2 DEVICES LIVE</span>
+              <span class="status-pill" style="background:var(--diner-red);color:#FFF;">2 - 4 PLAYERS</span>
             </div>
-            <h2 style="margin:0 0 8px;font-size:1.45rem;">雙裝置房號連線</h2>
-            <p style="margin:0;font-weight:700;line-height:1.5;">手機與筆電各開網頁！雙方皆可即時看見彼此的移動與移動軌跡，結算時雙端同步跳出成績單並可回準備室再次準備或退出。</p>
+            <h2 style="margin:0 0 8px;font-size:1.45rem;">多人房號連線（2～4 人）</h2>
+            <p style="margin:0;font-weight:700;line-height:1.5;">可選擇 2 人、3 人或 4 人房間上限再建立房號，或輸入房號加入；支援即時走位軌跡同步與雙向結算。</p>
           </div>
-          <button class="btn btn-yellow" onclick="openRoomSelect()">創立 / 輸入房號連線 →</button>
+          <button class="btn btn-yellow" onclick="openRoomSelect()">選擇人數 / 創立或加入房號 →</button>
         </div>
       </div>
     </section>
 
-    <!-- 第二層：創立房號 / 輸入房號 -->
+    <!-- 第二層：選擇人數與創立房號 / 輸入房號 -->
     <section id="screenRoomSelect" class="hidden">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
         <button class="btn btn-light" onclick="goScreen('screenMenu')">← 返回主選單</button>
-        <h2 style="margin:0;font-size:1.4rem;">跨裝置連線大廳 — 創立或加入房間</h2>
+        <h2 style="margin:0;font-size:1.4rem;">多人連線大廳 — 選擇房間人數或加入房間</h2>
       </div>
 
       <div class="lobby-grid">
         <div class="card" style="background:#FFF8E7;">
-          <h3 style="margin-top:0;">1. 房主建立房間（第一台裝置）</h3>
-          <p style="font-weight:700;color:#444;">點擊下方按鈕產生一組 4 碼房號，請把這 4 碼告訴另一台裝置的隊友。</p>
-          <button class="btn btn-red" style="width:100%;" id="createRoomBtn" onclick="createOnlineRoom()">立即建立連線房間並產生 4 碼房號</button>
+          <h3 style="margin-top:0;">1. 選擇房間人數再建立房間</h3>
+          <p style="font-weight:700;color:#444;">先選好要 2 人、3 人或 4 人同樂，再產生 4 碼房號邀請夥伴加入。</p>
+          <div style="font-weight:900;font-size:0.9rem;margin-bottom:6px;">房間人數上限：</div>
+          <div class="room-size-selector" id="roomSizeSelector">
+            <button type="button" class="size-pill active" data-max="2" onclick="selectMaxPlayers(2, this)">2 人房</button>
+            <button type="button" class="size-pill" data-max="3" onclick="selectMaxPlayers(3, this)">3 人房</button>
+            <button type="button" class="size-pill" data-max="4" onclick="selectMaxPlayers(4, this)">4 人房</button>
+          </div>
+          <button class="btn btn-red" style="width:100%;" id="createRoomBtn" onclick="createOnlineRoom()">建立 <span id="createBtnMaxLabel">2</span> 人連線房間並產生房號</button>
         </div>
 
         <div class="card">
-          <h3 style="margin-top:0;">2. 隊友輸入房號加入（第二台裝置）</h3>
-          <p style="font-weight:700;color:#444;">輸入第一台裝置畫面上的 4 碼房號，按下加入後雙方準備室會立刻同步。</p>
+          <h3 style="margin-top:0;">2. 輸入 4 碼房間號加入</h3>
+          <p style="font-weight:700;color:#444;">輸入房主畫面上的 4 碼房號，加入後會同步房間人數設定與準備狀態。</p>
           <input id="joinCodeInput" class="code-input" type="text" inputmode="numeric" maxlength="4" placeholder="輸入 4 碼房號" />
           <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
             <button class="btn btn-blue" style="flex:1;" id="joinRoomBtn" onclick="joinOnlineRoom()">連線加入房間</button>
@@ -648,7 +711,7 @@
       </div>
     </section>
 
-    <!-- 第三層：雙裝置同步準備大廳 -->
+    <!-- 第三層：2～4 人同步準備大廳 -->
     <section id="screenReady" class="hidden">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-bottom:3px solid var(--ink);padding-bottom:12px;">
@@ -677,7 +740,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:14px;border-top:3px solid var(--ink);">
           <div>
             <div style="font-weight:900;" id="readySummaryText">準備狀態確認中...</div>
-            <div style="font-size:0.85rem;font-weight:700;color:#555;" id="readySubHint">雙裝置皆按下「準備」後，由房主按下「開始營業！」同步開局。</div>
+            <div style="font-size:0.85rem;font-weight:700;color:#555;" id="readySubHint">房間全員皆按下「準備」後，由房主按下「開始營業！」同步開局。</div>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button class="btn btn-mint" id="toggleMyReadyBtn" onclick="toggleMyReady()">按下準備</button>
@@ -712,6 +775,7 @@
         </div>
       </div>
 
+      <!-- 上方訂單製作流程（圖示化步驟） -->
       <div class="orders-strip" id="ordersStrip"></div>
 
       <div class="arena-wrapper">
@@ -719,17 +783,13 @@
           <div id="controlHintText">
             <span>移動：<strong>WASD / 方向鍵</strong>（即時同步給隊友） · 拿取／放下／切菜／丟地上：<strong>滑鼠左鍵</strong>（或 <strong>Space</strong>）</span>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span class="holding-pill" id="holdingStatusP1">P1：空手</span>
-            <span class="holding-pill hidden" id="holdingStatusP2" style="background:#DBEAFE;">P2：空手</span>
-          </div>
+          <div id="holdingPillsBar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>
         </div>
 
         <div class="canvas-frame">
           <canvas id="kitchenCanvas" width="960" height="540"></canvas>
         </div>
 
-        <!-- 手機／觸控玩家方向鍵與互動按鈕 -->
         <div class="touch-controls">
           <div class="dpad-grid">
             <div></div>
@@ -775,7 +835,8 @@
       bandName: '紅',
       soundOn: true,
       mode: 'solo',
-      role: 'p1',
+      maxPlayers: 2,
+      mySlotId: 'p1',
       roomCode: null,
       connected: false,
       players: [],
@@ -789,7 +850,7 @@
       gameStarted: false,
       orders: [],
       chefs: [],
-      trails: { p1: [], p2: [] }, // 記錄雙方移動軌跡點，讓彼此清楚看見走位路徑
+      trails: { p1: [], p2: [], p3: [], p4: [] },
       keys: {},
       touchDir: { up: false, down: false, left: false, right: false },
       stations: [],
@@ -804,10 +865,10 @@
     const CANVAS_H = 540;
 
     let peer = null;
-    let dataConn = null;
+    let hostConns = [];
+    let guestConn = null;
     let netTickTimer = null;
     let helloRetryTimer = null;
-    let lastTrailRecordTime = 0;
 
     const RECIPES = [
       { id: 'classic', name: '經典美式起司堡', price: 120, items: ['bun', 'patty', 'cheese', 'bun'] },
@@ -843,6 +904,43 @@
       yellow: '自然黃膚色',
       dark: '深色／黑膚色'
     };
+
+    const SLOT_COLORS = ['#2563EB', '#0D9488', '#D97706', '#9333EA'];
+
+    function svgIngredientMini(key, size = 22) {
+      if (key === 'bun') {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
+          <path d="M4 15C4 9.5 8.5 6.5 14 6.5C19.5 6.5 24 9.5 24 15H4Z" fill="#F59E0B" stroke="#1A1A1A" stroke-width="2.2"/>
+          <circle cx="11" cy="11" r="1.1" fill="#FFFBEB"/><circle cx="15" cy="9.8" r="1.1" fill="#FFFBEB"/><circle cx="18.5" cy="11.5" r="1.1" fill="#FFFBEB"/>
+          <rect x="4" y="17.5" width="20" height="4" rx="2" fill="#D97706" stroke="#1A1A1A" stroke-width="2"/>
+        </svg>`;
+      }
+      if (key === 'patty') {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
+          <ellipse cx="14" cy="14" rx="10.5" ry="6.8" fill="#78350F" stroke="#1A1A1A" stroke-width="2.2"/>
+          <path d="M8 13.5L12 15.5L16 12.5L20 15" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>`;
+      }
+      if (key === 'lettuce') {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="14" r="9.2" fill="#4ADE80" stroke="#1A1A1A" stroke-width="2.2"/>
+          <path d="M9 13C11.5 10.5 16.5 10.5 19 13" stroke="#14532D" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>`;
+      }
+      if (key === 'cheese') {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
+          <polygon points="3.5,20.5 14,6.5 24.5,20.5" fill="#FACC15" stroke="#1A1A1A" stroke-width="2.2"/>
+          <circle cx="12" cy="16" r="1.5" fill="#CA8A04"/><circle cx="16.5" cy="17.5" r="1.2" fill="#CA8A04"/>
+        </svg>`;
+      }
+      if (key === 'tomato') {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="15" r="8.8" fill="#EF4444" stroke="#1A1A1A" stroke-width="2.2"/>
+          <path d="M14 5V8.5M11 7.5L14 8.5L17 7.5" stroke="#16A34A" stroke-width="2" stroke-linecap="round"/>
+        </svg>`;
+      }
+      return '';
+    }
 
     function svgBurgerBadge(size = 26) {
       return `<svg width="${size}" height="${size}" viewBox="0 0 36 36" fill="none">
@@ -939,6 +1037,13 @@
       refreshCustomizerPreview();
     }
 
+    function selectMaxPlayers(num, btn) {
+      state.maxPlayers = num;
+      document.querySelectorAll('#roomSizeSelector .size-pill').forEach(el => el.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      document.getElementById('createBtnMaxLabel').textContent = String(num);
+    }
+
     function syncPlayerName() {
       const val = document.getElementById('playerNameInput').value.trim();
       state.playerName = val || '漢堡小當家';
@@ -962,9 +1067,13 @@
       netTickTimer = null;
       clearInterval(helloRetryTimer);
       helloRetryTimer = null;
-      if (dataConn) {
-        try { dataConn.close(); } catch (e) {}
-        dataConn = null;
+      hostConns.forEach(c => {
+        try { c.close(); } catch (e) {}
+      });
+      hostConns = [];
+      if (guestConn) {
+        try { guestConn.close(); } catch (e) {}
+        guestConn = null;
       }
       if (peer) {
         try { peer.destroy(); } catch (e) {}
@@ -973,9 +1082,19 @@
       state.connected = false;
     }
 
-    function sendNet(msg) {
-      if (dataConn && dataConn.open) {
-        try { dataConn.send(msg); } catch (e) {}
+    function sendToGuest(conn, msg) {
+      if (conn && conn.open) {
+        try { conn.send(msg); } catch (e) {}
+      }
+    }
+
+    function broadcastFromHost(msg) {
+      hostConns.forEach(conn => sendToGuest(conn, msg));
+    }
+
+    function sendToHost(msg) {
+      if (guestConn && guestConn.open) {
+        try { guestConn.send(msg); } catch (e) {}
       }
     }
 
@@ -983,7 +1102,8 @@
       cleanupNetwork();
       syncPlayerName();
       state.mode = 'solo';
-      state.role = 'p1';
+      state.maxPlayers = 1;
+      state.mySlotId = 'p1';
       state.roomCode = null;
       state.players = [{
         id: 'p1',
@@ -1010,7 +1130,7 @@
 
     function retryConnection() {
       if (!state.roomCode || state.mode !== 'online') return;
-      if (state.role === 'p1') {
+      if (state.mySlotId === 'p1') {
         initHostPeer(state.roomCode);
       } else {
         initGuestPeer(state.roomCode);
@@ -1020,16 +1140,23 @@
     function initHostPeer(code) {
       cleanupNetwork();
       state.connected = false;
-      setConnIndicator('wait', `正在註冊房號 #${code} 連線頻道...`);
+      setConnIndicator('wait', `正在註冊 ${state.maxPlayers} 人房號 #${code} 連線頻道...`);
 
       peer = new Peer(ROOM_PREFIX + code, PEER_CONFIG);
       peer.on('open', () => {
-        setConnIndicator('wait', `房號 #${code} 已就緒！請在另一台裝置輸入「${code}」加入...`);
+        setConnIndicator('wait', `${state.maxPlayers} 人房號 #${code} 已就緒！等待夥伴輸入房號加入...`);
       });
 
       peer.on('connection', (conn) => {
-        dataConn = conn;
-        setupConnectionHandlers(conn);
+        if (state.players.length >= state.maxPlayers) {
+          conn.on('open', () => {
+            sendToGuest(conn, { type: 'room_full', maxPlayers: state.maxPlayers });
+            setTimeout(() => conn.close(), 200);
+          });
+          return;
+        }
+        hostConns.push(conn);
+        setupHostConnection(conn);
       });
 
       peer.on('disconnected', () => {
@@ -1050,8 +1177,8 @@
       peer = new Peer(undefined, PEER_CONFIG);
       peer.on('open', () => {
         const conn = peer.connect(ROOM_PREFIX + code, { reliable: true });
-        dataConn = conn;
-        setupConnectionHandlers(conn);
+        guestConn = conn;
+        setupGuestConnection(conn);
       });
 
       peer.on('error', (err) => {
@@ -1064,10 +1191,11 @@
         document.getElementById('roomErrorMsg').textContent = '連線元件尚未載入完成，請稍後再試！';
         return;
       }
+      cleanupNetwork();
       syncPlayerName();
       const code = String(Math.floor(1000 + Math.random() * 9000));
       state.mode = 'online';
-      state.role = 'p1';
+      state.mySlotId = 'p1';
       state.roomCode = code;
       state.players = [{
         id: 'p1',
@@ -1078,10 +1206,10 @@
         bandName: state.bandName
       }];
 
-      document.getElementById('roomModeTag').textContent = '雙裝置連線模式 · 你是房主 (P1)';
-      document.getElementById('roomCodeBadge').textContent = `房號 #${code}`;
+      document.getElementById('roomModeTag').textContent = `${state.maxPlayers} 人連線模式 · 房主 (P1)`;
+      document.getElementById('roomCodeBadge').textContent = `房號 #${code}（${state.maxPlayers}人房）`;
       document.getElementById('linkStatusBanner').classList.remove('hidden');
-      document.getElementById('readySubHint').textContent = '等待第二台裝置輸入房號加入並按下準備，雙方皆準備後即可由你開始營業！';
+      document.getElementById('readySubHint').textContent = `等待夥伴加入（上限 ${state.maxPlayers} 人）並全員按下準備，由房主按「開始營業！」。`;
       renderReadyPlayers();
       goScreen('screenReady');
       initHostPeer(code);
@@ -1097,117 +1225,201 @@
         document.getElementById('roomErrorMsg').textContent = '連線元件尚未載入完成，請稍後再試！';
         return;
       }
+      cleanupNetwork();
       syncPlayerName();
       state.mode = 'online';
-      state.role = 'p2';
+      state.mySlotId = 'p2';
       state.roomCode = code;
       document.getElementById('roomErrorMsg').textContent = '';
 
       state.players = [{
         id: 'p2',
-        name: `${state.playerName} (P2 隊友)`,
+        name: `${state.playerName} (P2)`,
         ready: false,
         skin: state.skin,
         band: state.band,
         bandName: state.bandName
       }];
 
-      document.getElementById('roomModeTag').textContent = '雙裝置連線模式 · 你是隊友 (P2)';
+      document.getElementById('roomModeTag').textContent = '多人連線模式 · 已加入房間';
       document.getElementById('roomCodeBadge').textContent = `房號 #${code}`;
       document.getElementById('linkStatusBanner').classList.remove('hidden');
-      document.getElementById('readySubHint').textContent = '你按下「準備」後，房主畫面會即時顯示你已準備，並由房主按開始營業！';
+      document.getElementById('readySubHint').textContent = '按下「準備」後同步給房主與隊友，全員準備後由房主開始營業！';
       renderReadyPlayers();
       goScreen('screenReady');
       initGuestPeer(code);
     }
 
-    function setupConnectionHandlers(conn) {
-      conn.on('open', () => {
-        state.connected = true;
-        setConnIndicator('online', `雙裝置已連線成功（房號 #${state.roomCode}）！準備狀態與即時走位同步中`);
+    function pickNextAvailableSlotId() {
+      const used = new Set(state.players.map(p => p.id));
+      for (const sid of ['p2', 'p3', 'p4']) {
+        if (!used.has(sid)) return sid;
+      }
+      return null;
+    }
 
-        if (state.role === 'p2') {
-          const sendHello = () => {
-            if (!state.connected || state.gameStarted) return;
-            sendNet({
-              type: 'p2_hello',
-              player: {
-                id: 'p2',
-                name: `${state.playerName} (P2)`,
-                ready: state.players.find(p => p.id === 'p2')?.ready || false,
-                skin: state.skin,
-                band: state.band,
-                bandName: state.bandName
-              }
-            });
-          };
-          sendHello();
-          helloRetryTimer = setInterval(() => {
-            if (state.players.length < 2 && !state.gameStarted) {
-              sendHello();
-            } else {
-              clearInterval(helloRetryTimer);
-            }
-          }, 800);
-        } else {
-          broadcastLobbyFromHost();
+    function setupHostConnection(conn) {
+      conn.on('open', () => {
+        const slotId = pickNextAvailableSlotId();
+        if (!slotId) {
+          sendToGuest(conn, { type: 'room_full', maxPlayers: state.maxPlayers });
+          conn.close();
+          return;
         }
+        conn._slotId = slotId;
+        state.connected = true;
+        setConnIndicator('online', `已連線（房號 #${state.roomCode} · ${state.players.length + 1}/${state.maxPlayers} 人）`);
+        sendToGuest(conn, {
+          type: 'assign_slot',
+          slotId,
+          maxPlayers: state.maxPlayers
+        });
         renderReadyPlayers();
       });
 
       conn.on('data', (msg) => {
         if (!msg || !msg.type) return;
+        const sid = msg.slotId || conn._slotId;
 
-        if (msg.type === 'p2_hello' && state.role === 'p1') {
-          state.connected = true;
-          const others = state.players.filter(p => p.id !== 'p2');
-          state.players = [...others, msg.player];
+        if (msg.type === 'guest_hello' && sid) {
+          const filtered = state.players.filter(p => p.id !== sid);
+          state.players = [...filtered, {
+            id: sid,
+            name: msg.player.name,
+            ready: !!msg.player.ready,
+            skin: msg.player.skin,
+            band: msg.player.band,
+            bandName: msg.player.bandName
+          }];
+          setConnIndicator('online', `房號 #${state.roomCode} 已連線（目前 ${state.players.length}/${state.maxPlayers} 人）`);
           renderReadyPlayers();
-          broadcastLobbyFromHost();
-        } else if (msg.type === 'p2_ready_update' && state.role === 'p1') {
-          const p2 = state.players.find(p => p.id === 'p2');
-          if (p2) p2.ready = !!msg.ready;
+          broadcastFromHost({
+            type: 'lobby_state',
+            maxPlayers: state.maxPlayers,
+            players: state.players
+          });
+        } else if (msg.type === 'guest_ready_update' && sid) {
+          const target = state.players.find(p => p.id === sid);
+          if (target) target.ready = !!msg.ready;
           renderReadyPlayers();
-          broadcastLobbyFromHost();
-        } else if (msg.type === 'lobby_state' && state.role === 'p2') {
+          broadcastFromHost({
+            type: 'lobby_state',
+            maxPlayers: state.maxPlayers,
+            players: state.players
+          });
+        } else if (msg.type === 'guest_move' && sid) {
+          const chef = state.chefs.find(c => c.id === sid);
+          if (chef) {
+            chef.x = msg.x;
+            chef.y = msg.y;
+            chef.angle = msg.angle;
+            chef.walkPhase = msg.walkPhase;
+            pushTrailPoint(sid, chef.x, chef.y);
+          }
+        } else if (msg.type === 'guest_action' && sid) {
+          const chef = state.chefs.find(c => c.id === sid);
+          if (chef) {
+            chef.x = msg.x;
+            chef.y = msg.y;
+            chef.angle = msg.angle;
+            pushTrailPoint(sid, chef.x, chef.y);
+            if (msg.clickTarget) {
+              handlePointerActionForChef(chef, msg.clickTarget.x, msg.clickTarget.y);
+            } else {
+              triggerActionForChef(chef);
+            }
+            sendWorldStateToGuests();
+          }
+        } else if (msg.type === 'return_to_lobby') {
+          closeModal();
+          resetToReadyLobby();
+        }
+      });
+
+      conn.on('close', () => {
+        const sid = conn._slotId;
+        hostConns = hostConns.filter(c => c !== conn);
+        if (sid) {
+          state.players = state.players.filter(p => p.id !== sid);
+        }
+        state.connected = hostConns.length > 0;
+        setConnIndicator(state.connected ? 'online' : 'wait', `房號 #${state.roomCode}（目前 ${state.players.length}/${state.maxPlayers} 人）`);
+        renderReadyPlayers();
+        broadcastFromHost({
+          type: 'lobby_state',
+          maxPlayers: state.maxPlayers,
+          players: state.players
+        });
+      });
+    }
+
+    function setupGuestConnection(conn) {
+      conn.on('open', () => {
+        state.connected = true;
+        setConnIndicator('online', `已連上房號 #${state.roomCode}，等待分配座位與同步名單...`);
+
+        const sendHello = () => {
+          if (!state.connected || state.gameStarted) return;
+          sendToHost({
+            type: 'guest_hello',
+            slotId: state.mySlotId,
+            player: {
+              id: state.mySlotId,
+              name: `${state.playerName} (${state.mySlotId.toUpperCase()})`,
+              ready: state.players.find(p => p.id === state.mySlotId)?.ready || false,
+              skin: state.skin,
+              band: state.band,
+              bandName: state.bandName
+            }
+          });
+        };
+        sendHello();
+        helloRetryTimer = setInterval(() => {
+          if (state.players.length < 2 && !state.gameStarted) {
+            sendHello();
+          } else {
+            clearInterval(helloRetryTimer);
+          }
+        }, 800);
+      });
+
+      conn.on('data', (msg) => {
+        if (!msg || !msg.type) return;
+
+        if (msg.type === 'assign_slot') {
+          state.mySlotId = msg.slotId;
+          state.maxPlayers = msg.maxPlayers || state.maxPlayers;
+          document.getElementById('roomModeTag').textContent = `${state.maxPlayers} 人連線模式 · 你是 ${state.mySlotId.toUpperCase()}`;
+          document.getElementById('roomCodeBadge').textContent = `房號 #${state.roomCode}（${state.maxPlayers}人房）`;
+          sendToHost({
+            type: 'guest_hello',
+            slotId: state.mySlotId,
+            player: {
+              id: state.mySlotId,
+              name: `${state.playerName} (${state.mySlotId.toUpperCase()})`,
+              ready: state.players.find(p => p.id === state.mySlotId)?.ready || false,
+              skin: state.skin,
+              band: state.band,
+              bandName: state.bandName
+            }
+          });
+        } else if (msg.type === 'room_full') {
+          setConnIndicator('err', `此房間人數已滿（上限 ${msg.maxPlayers} 人）`);
+        } else if (msg.type === 'lobby_state') {
           state.connected = true;
+          if (msg.maxPlayers) state.maxPlayers = msg.maxPlayers;
           if (Array.isArray(msg.players)) {
             state.players = msg.players;
+            setConnIndicator('online', `房號 #${state.roomCode} 已連線（${state.players.length}/${state.maxPlayers} 人）`);
             renderReadyPlayers();
           }
-        } else if (msg.type === 'game_start' && state.role === 'p2') {
+        } else if (msg.type === 'game_start') {
           startGuestGameFromHost(msg.snapshot);
-        } else if (msg.type === 'p2_move' && state.role === 'p1') {
-          // 房主即時接收 P2 的位置、朝向與步伐，並同時記錄軌跡與立即轉發給雙方
-          const c2 = state.chefs[1];
-          if (c2) {
-            c2.x = msg.x;
-            c2.y = msg.y;
-            c2.angle = msg.angle;
-            c2.walkPhase = msg.walkPhase;
-            pushTrailPoint('p2', c2.x, c2.y);
-          }
-        } else if (msg.type === 'p2_action' && state.role === 'p1') {
-          const c2 = state.chefs[1];
-          if (c2) {
-            c2.x = msg.x;
-            c2.y = msg.y;
-            c2.angle = msg.angle;
-            pushTrailPoint('p2', c2.x, c2.y);
-            if (msg.clickTarget) {
-              handlePointerActionForChef(c2, msg.clickTarget.x, msg.clickTarget.y);
-            } else {
-              triggerActionForChef(c2);
-            }
-            sendWorldStateToGuest();
-          }
-        } else if (msg.type === 'world_state' && state.role === 'p2') {
+        } else if (msg.type === 'world_state') {
           applyWorldStateOnGuest(msg.snapshot);
-        } else if (msg.type === 'game_over' && state.role === 'p2') {
-          // 第二位玩家同步收到結束結算畫面
+        } else if (msg.type === 'game_over') {
           showSharedResultModal(msg.result);
         } else if (msg.type === 'return_to_lobby') {
-          // 任一方從結算畫面點「再次準備」，雙方回到準備大廳並重置準備狀態
           closeModal();
           resetToReadyLobby();
         }
@@ -1215,31 +1427,30 @@
 
       conn.on('close', () => {
         state.connected = false;
-        setConnIndicator('err', '與隊友的連線已中斷，可點「重新連線」');
+        setConnIndicator('err', '與房主的連線已中斷，可點「重新連線」');
         renderReadyPlayers();
       });
     }
 
-    function broadcastLobbyFromHost() {
-      if (state.role !== 'p1') return;
-      sendNet({
-        type: 'lobby_state',
-        players: state.players
-      });
-    }
-
     function toggleMyReady() {
-      const myId = state.role;
-      const me = state.players.find(p => p.id === myId);
+      const me = state.players.find(p => p.id === state.mySlotId);
       if (!me) return;
       me.ready = !me.ready;
       renderReadyPlayers();
 
       if (state.mode === 'online') {
-        if (state.role === 'p1') {
-          broadcastLobbyFromHost();
+        if (state.mySlotId === 'p1') {
+          broadcastFromHost({
+            type: 'lobby_state',
+            maxPlayers: state.maxPlayers,
+            players: state.players
+          });
         } else {
-          sendNet({ type: 'p2_ready_update', ready: me.ready });
+          sendToHost({
+            type: 'guest_ready_update',
+            slotId: state.mySlotId,
+            ready: me.ready
+          });
         }
       }
     }
@@ -1247,7 +1458,7 @@
     function copyRoomCode() {
       if (!state.roomCode) return;
       navigator.clipboard?.writeText(state.roomCode);
-      setConnIndicator(state.connected ? 'online' : 'wait', `已複製房號「${state.roomCode}」！請在另一台裝置輸入加入`);
+      setConnIndicator(state.connected ? 'online' : 'wait', `已複製房號「${state.roomCode}」！請在夥伴裝置輸入加入`);
     }
 
     function leaveRoom() {
@@ -1275,55 +1486,83 @@
       renderReadyPlayers();
       goScreen('screenReady');
 
-      if (state.mode === 'online' && state.role === 'p1') {
-        broadcastLobbyFromHost();
+      if (state.mode === 'online' && state.mySlotId === 'p1') {
+        broadcastFromHost({
+          type: 'lobby_state',
+          maxPlayers: state.maxPlayers,
+          players: state.players
+        });
       }
     }
 
     function renderReadyPlayers() {
       const grid = document.getElementById('playersGrid');
       grid.innerHTML = '';
-      state.players.forEach(p => {
-        const isMe = p.id === state.role;
+
+      if (state.mode === 'solo') {
+        state.players.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'player-slot' + (p.ready ? ' ready' : '');
+          div.innerHTML = `
+            ${renderCustomChefSvg(p, 66)}
+            <div style="font-weight:950;">${p.name}</div>
+            <div style="font-size:0.78rem;color:#555;font-weight:700;">綁帶：${p.bandName}</div>
+            <span class="status-pill">${p.ready ? '已準備 ✓' : '等待準備...'}</span>
+          `;
+          grid.appendChild(div);
+        });
+        document.getElementById('startGameBtn').classList.remove('hidden');
+        document.getElementById('startGameBtn').disabled = !state.players[0]?.ready;
+        document.getElementById('readySummaryText').textContent = '單人準備完成，可以開始營業！';
+        return;
+      }
+
+      const slotIds = ['p1', 'p2', 'p3', 'p4'].slice(0, state.maxPlayers);
+      slotIds.forEach((sid, idx) => {
+        const p = state.players.find(pl => pl.id === sid);
         const div = document.createElement('div');
-        div.className = 'player-slot' + (p.ready ? ' ready' : '');
-        div.innerHTML = `
-          ${renderCustomChefSvg(p, 66)}
-          <div style="font-weight:950;">${p.name} ${isMe ? '（本機）' : '（隊友）'}</div>
-          <div style="font-size:0.78rem;color:#555;font-weight:700;">綁帶：${p.bandName}</div>
-          <span class="status-pill">${p.ready ? '已準備 ✓' : '等待準備...'}</span>
-        `;
+        if (!p) {
+          div.className = 'player-slot empty-seat';
+          div.innerHTML = `
+            <div style="font-size:1.3rem;font-weight:950;">P${idx + 1}</div>
+            <div style="font-weight:800;font-size:0.88rem;">等待玩家加入...</div>
+            <span class="status-pill">空位</span>
+          `;
+        } else {
+          const isMe = p.id === state.mySlotId;
+          div.className = 'player-slot' + (p.ready ? ' ready' : '');
+          div.innerHTML = `
+            ${renderCustomChefSvg(p, 66)}
+            <div style="font-weight:950;">${p.name} ${isMe ? '（本機）' : ''}</div>
+            <div style="font-size:0.78rem;color:#555;font-weight:700;">綁帶：${p.bandName}</div>
+            <span class="status-pill">${p.ready ? '已準備 ✓' : '等待準備...'}</span>
+          `;
+        }
         grid.appendChild(div);
       });
 
-      const me = state.players.find(p => p.id === state.role);
+      const me = state.players.find(p => p.id === state.mySlotId);
       document.getElementById('toggleMyReadyBtn').textContent = me && me.ready ? '取消準備' : '按下準備';
 
-      if (state.mode === 'solo') {
-        const allReady = state.players.length > 0 && state.players.every(p => p.ready);
+      const allJoined = state.players.length >= state.maxPlayers && state.connected;
+      const allReady = allJoined && state.players.every(p => p.ready);
+
+      if (state.mySlotId === 'p1') {
         document.getElementById('startGameBtn').classList.remove('hidden');
         document.getElementById('startGameBtn').disabled = !allReady;
-        document.getElementById('readySummaryText').textContent = allReady ? '單人準備完成，可以開始營業！' : '請先按下準備';
       } else {
-        const hasTwo = state.players.length >= 2 && state.connected;
-        const allReady = hasTwo && state.players.every(p => p.ready);
+        document.getElementById('startGameBtn').classList.add('hidden');
+      }
 
-        if (state.role === 'p1') {
-          document.getElementById('startGameBtn').classList.remove('hidden');
-          document.getElementById('startGameBtn').disabled = !allReady;
-        } else {
-          document.getElementById('startGameBtn').classList.add('hidden');
-        }
-
-        if (!hasTwo) {
-          document.getElementById('readySummaryText').textContent = '等待第二台裝置輸入房號連線加入（目前 1/2 人）...';
-        } else if (!allReady) {
-          document.getElementById('readySummaryText').textContent =
-            `雙方已連線！目前 ${state.players.filter(p => p.ready).length} / 2 人已準備（雙方準備狀態已即時同步）`;
-        } else {
-          document.getElementById('readySummaryText').textContent =
-            state.role === 'p1' ? '雙方皆已準備！請按「開始營業！」同步開局！' : '雙方皆已準備！等待房主按「開始營業！」...';
-        }
+      if (!allJoined) {
+        document.getElementById('readySummaryText').textContent =
+          `房號 #${state.roomCode} 等待夥伴加入（目前 ${state.players.length} / ${state.maxPlayers} 人）...`;
+      } else if (!allReady) {
+        document.getElementById('readySummaryText').textContent =
+          `人數已到齊（${state.players.length}/${state.maxPlayers} 人）！目前 ${state.players.filter(p => p.ready).length} / ${state.maxPlayers} 人已準備`;
+      } else {
+        document.getElementById('readySummaryText').textContent =
+          state.mySlotId === 'p1' ? '全員皆已準備！請按「開始營業！」同步開局！' : '全員皆已準備！等待房主按「開始營業！」...';
       }
     }
 
@@ -1333,7 +1572,7 @@
       const last = list[list.length - 1];
       if (!last || Math.hypot(x - last.x, y - last.y) >= 8) {
         list.push({ x, y, life: 1.0 });
-        if (list.length > 26) list.shift();
+        if (list.length > 24) list.shift();
       }
     }
 
@@ -1341,10 +1580,13 @@
       state.touchDir[dir] = active;
     }
 
+    function getMyChef() {
+      return state.chefs.find(c => c.id === state.mySlotId) || state.chefs[0];
+    }
+
     function triggerMyAction() {
       if (document.getElementById('screenGame').classList.contains('hidden') || state.paused) return;
-      const myChef = state.role === 'p2' && state.chefs[1] ? state.chefs[1] : state.chefs[0];
-      triggerActionForChef(myChef);
+      triggerActionForChef(getMyChef());
     }
 
     function setupKitchen() {
@@ -1372,26 +1614,50 @@
       state.floorItems = [];
       state.particles = [];
       state.beltFlashTimer = 0;
-      state.trails = { p1: [], p2: [] };
+      state.trails = { p1: [], p2: [], p3: [], p4: [] };
 
-      const p1Cfg = state.players.find(p => p.id === 'p1') || { name: `${state.playerName} (P1)`, skin: state.skin, band: state.band, bandName: state.bandName };
+      const spawns = [
+        { x: 380, y: 285 },
+        { x: 540, y: 285 },
+        { x: 380, y: 335 },
+        { x: 540, y: 335 }
+      ];
+
       if (state.mode === 'online') {
-        const p2Cfg = state.players.find(p => p.id === 'p2') || { name: '隊友主廚 (P2)', skin: 'yellow', band: '#2563EB', bandName: '藍' };
-        state.chefs = [
-          { id: 'p1', tag: 'P1', name: p1Cfg.name, skin: p1Cfg.skin, band: p1Cfg.band, x: 400, y: 300, radius: 21, speed: 255, angle: -Math.PI / 2, walkPhase: 0, holding: null },
-          { id: 'p2', tag: 'P2', name: p2Cfg.name, skin: p2Cfg.skin, band: p2Cfg.band, x: 560, y: 300, radius: 21, speed: 255, angle: -Math.PI / 2, walkPhase: 0, holding: null }
-        ];
-        const myTag = state.role.toUpperCase();
+        state.chefs = state.players.map((p, idx) => ({
+          id: p.id,
+          tag: p.id.toUpperCase(),
+          name: p.name,
+          skin: p.skin,
+          band: p.band,
+          x: spawns[idx % spawns.length].x,
+          y: spawns[idx % spawns.length].y,
+          radius: 21,
+          speed: 255,
+          angle: -Math.PI / 2,
+          walkPhase: 0,
+          holding: null
+        }));
         document.getElementById('controlHintText').innerHTML =
-          `<span>房號 <strong>#${state.roomCode}</strong>（你是 <strong>${myTag}</strong>）：<strong>WASD / 方向鍵 / 觸控</strong> 移動 · <strong>滑鼠左鍵 / Space</strong> 拿取、放下、丟地與組裝</span>`;
-        document.getElementById('holdingStatusP2').classList.remove('hidden');
+          `<span>房號 <strong>#${state.roomCode}</strong>（你是 <strong>${state.mySlotId.toUpperCase()}</strong>）：<strong>WASD / 方向鍵 / 觸控</strong> 移動 · <strong>滑鼠左鍵 / Space</strong> 拿取、放下、丟地與組裝</span>`;
       } else {
-        state.chefs = [
-          { id: 'p1', tag: 'P1', name: p1Cfg.name, skin: p1Cfg.skin, band: p1Cfg.band, x: 480, y: 300, radius: 21, speed: 255, angle: -Math.PI / 2, walkPhase: 0, holding: null }
-        ];
+        const p1Cfg = state.players[0] || { name: `${state.playerName} (P1)`, skin: state.skin, band: state.band };
+        state.chefs = [{
+          id: 'p1',
+          tag: 'P1',
+          name: p1Cfg.name,
+          skin: p1Cfg.skin,
+          band: p1Cfg.band,
+          x: 480,
+          y: 300,
+          radius: 21,
+          speed: 255,
+          angle: -Math.PI / 2,
+          walkPhase: 0,
+          holding: null
+        }];
         document.getElementById('controlHintText').innerHTML =
           `<span>移動：<strong>WASD / 方向鍵</strong> · 拿取／放下／切菜／丟地上：<strong>滑鼠左鍵</strong>（或 <strong>Space</strong>）</span>`;
-        document.getElementById('holdingStatusP2').classList.add('hidden');
       }
     }
 
@@ -1421,21 +1687,24 @@
       const h = chef && chef.holding;
       if (!h) return '空手';
       if (h.kind === 'single') return ITEM_LABELS[h.item] || h.item;
-      if (h.kind === 'burger') return `漢堡（${h.items.map(k => ITEM_LABELS[k] || k).join(' → ')}）`;
+      if (h.kind === 'burger') return `漢堡（${h.items.length}層）`;
       return '空手';
     }
 
     function updateHoldingHud() {
-      const p1 = state.chefs[0];
-      const p2 = state.chefs[1];
-      let p1Text = `P1：${formatChefHolding(p1)}`;
-      if (state.toastTimer > 0 && state.toastText) {
-        p1Text += `  ｜  ${state.toastText}`;
-      }
-      document.getElementById('holdingStatusP1').textContent = p1Text;
-      if (p2) {
-        document.getElementById('holdingStatusP2').textContent = `P2：${formatChefHolding(p2)}`;
-      }
+      const bar = document.getElementById('holdingPillsBar');
+      bar.innerHTML = '';
+      state.chefs.forEach((c, idx) => {
+        const span = document.createElement('span');
+        span.className = 'holding-pill';
+        if (idx > 0) span.style.background = '#DBEAFE';
+        let label = `${c.tag}：${formatChefHolding(c)}`;
+        if (c.id === state.mySlotId && state.toastTimer > 0 && state.toastText) {
+          label += ` ｜ ${state.toastText}`;
+        }
+        span.textContent = label;
+        bar.appendChild(span);
+      });
     }
 
     function buildWorldSnapshot() {
@@ -1452,16 +1721,16 @@
       };
     }
 
-    function sendWorldStateToGuest() {
-      if (state.mode !== 'online' || state.role !== 'p1') return;
-      sendNet({
+    function sendWorldStateToGuests() {
+      if (state.mode !== 'online' || state.mySlotId !== 'p1') return;
+      broadcastFromHost({
         type: 'world_state',
         snapshot: buildWorldSnapshot()
       });
     }
 
     function applyWorldStateOnGuest(snap) {
-      if (!snap || state.role !== 'p2') return;
+      if (!snap || state.mySlotId === 'p1') return;
       state.timeLeft = snap.timeLeft;
       state.score = snap.score;
       state.combo = snap.combo;
@@ -1471,21 +1740,21 @@
       if (Array.isArray(snap.stations)) state.stations = snap.stations;
       if (Array.isArray(snap.floorItems)) state.floorItems = snap.floorItems;
 
-      // 修正：P2 同步 P1 的即時座標、朝向、步伐與軌跡，同時保留 P2 本機即時座標並同步持有物
-      if (Array.isArray(snap.chefs) && snap.chefs.length >= 2) {
-        const remoteP1 = snap.chefs[0];
-        const remoteP2 = snap.chefs[1];
-        if (state.chefs[0] && remoteP1) {
-          state.chefs[0].x = remoteP1.x;
-          state.chefs[0].y = remoteP1.y;
-          state.chefs[0].angle = remoteP1.angle;
-          state.chefs[0].walkPhase = remoteP1.walkPhase;
-          state.chefs[0].holding = remoteP1.holding;
-          pushTrailPoint('p1', remoteP1.x, remoteP1.y);
-        }
-        if (state.chefs[1] && remoteP2) {
-          state.chefs[1].holding = remoteP2.holding;
-        }
+      if (Array.isArray(snap.chefs)) {
+        snap.chefs.forEach(rc => {
+          const localC = state.chefs.find(c => c.id === rc.id);
+          if (!localC) return;
+          if (rc.id === state.mySlotId) {
+            localC.holding = rc.holding;
+          } else {
+            localC.x = rc.x;
+            localC.y = rc.y;
+            localC.angle = rc.angle;
+            localC.walkPhase = rc.walkPhase;
+            localC.holding = rc.holding;
+            pushTrailPoint(rc.id, rc.x, rc.y);
+          }
+        });
       }
 
       renderHud();
@@ -1499,8 +1768,8 @@
 
     function hostStartOnlineGame() {
       beginCountdown();
-      if (state.mode === 'online' && state.role === 'p1') {
-        sendNet({
+      if (state.mode === 'online' && state.mySlotId === 'p1') {
+        broadcastFromHost({
           type: 'game_start',
           snapshot: buildWorldSnapshot()
         });
@@ -1528,17 +1797,17 @@
       clearInterval(netTickTimer);
       cancelAnimationFrame(rafId);
 
-      // P2 每 33ms（30fps）把即時座標、朝向與步伐傳給 P1 房主
       netTickTimer = setInterval(() => {
         if (state.paused || !state.gameStarted) return;
-        const c2 = state.chefs[1];
-        if (c2) {
-          sendNet({
-            type: 'p2_move',
-            x: c2.x,
-            y: c2.y,
-            angle: c2.angle,
-            walkPhase: c2.walkPhase
+        const me = getMyChef();
+        if (me) {
+          sendToHost({
+            type: 'guest_move',
+            slotId: state.mySlotId,
+            x: me.x,
+            y: me.y,
+            angle: me.angle,
+            walkPhase: me.walkPhase
           });
         }
       }, 33);
@@ -1591,13 +1860,13 @@
         if (!state.orders.length) state.orders.push(generateOrder());
         renderHud();
         renderOrders();
-        sendWorldStateToGuest();
+        sendWorldStateToGuests();
       }, 1000);
 
-      if (state.mode === 'online' && state.role === 'p1') {
+      if (state.mode === 'online' && state.mySlotId === 'p1') {
         netTickTimer = setInterval(() => {
           if (!state.paused && state.gameStarted) {
-            sendWorldStateToGuest();
+            sendWorldStateToGuests();
           }
         }, 33);
       }
@@ -1620,7 +1889,7 @@
 
     function renderActiveChefs() {
       const strip = document.getElementById('activeChefStrip');
-      strip.innerHTML = `<span style="font-weight:900;font-size:0.86rem;">出戰主廚陣容：</span>`;
+      strip.innerHTML = `<span style="font-weight:900;font-size:0.86rem;">出戰主廚陣容（${state.chefs.length} 人）：</span>`;
       state.chefs.forEach(c => {
         const badge = document.createElement('span');
         badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:#FFF8E7;border:2px solid #1A1A1A;border-radius:999px;padding:3px 10px 3px 4px;font-weight:800;font-size:0.82rem;';
@@ -1641,6 +1910,11 @@
       strip.innerHTML = '';
       state.orders.forEach(o => {
         const pct = Math.max(0, Math.min(100, (o.rem / o.maxRem) * 100));
+        const flowHtml = o.items.map((k, idx) => {
+          const arrow = idx < o.items.length - 1 ? `<span class="flow-arrow">→</span>` : '';
+          return `<span class="flow-step-chip" title="${ITEM_LABELS[k] || k}">${svgIngredientMini(k, 22)}</span>${arrow}`;
+        }).join('');
+
         const card = document.createElement('div');
         card.className = 'order-ticket';
         card.innerHTML = `
@@ -1648,10 +1922,8 @@
             <span>${o.name}</span>
             <span style="color:var(--mint);">$${o.price}</span>
           </div>
-          <div style="font-size:0.78rem;font-weight:700;color:#444;margin-top:3px;">
-            堆疊順序：${o.items.map(k => ITEM_LABELS[k] || k).join(' → ')}
-          </div>
-          <div style="font-size:0.74rem;font-weight:800;margin-top:3px;">剩餘 ${o.rem}s</div>
+          <div class="recipe-flow-icons">${flowHtml}</div>
+          <div style="font-size:0.74rem;font-weight:800;margin-top:5px;">剩餘 ${o.rem}s</div>
           <div class="order-time-bar"><div class="order-time-fill" style="width:${pct}%;"></div></div>
         `;
         strip.appendChild(card);
@@ -1713,21 +1985,23 @@
         }
       }
 
-      if (state.chefs.length >= 2) {
-        const a = state.chefs[0];
-        const b = state.chefs[1];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const dist = Math.hypot(dx, dy);
-        const minDist = a.radius + b.radius;
-        if (dist > 0.0001 && dist < minDist) {
-          const push = (minDist - dist) / 2;
-          const nx = dx / dist;
-          const ny = dy / dist;
-          a.x -= nx * push;
-          a.y -= ny * push;
-          b.x += nx * push;
-          b.y += ny * push;
+      for (let i = 0; i < state.chefs.length; i++) {
+        for (let j = i + 1; j < state.chefs.length; j++) {
+          const a = state.chefs[i];
+          const b = state.chefs[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy);
+          const minDist = a.radius + b.radius;
+          if (dist > 0.0001 && dist < minDist) {
+            const push = (minDist - dist) / 2;
+            const nx = dx / dist;
+            const ny = dy / dist;
+            a.x -= nx * push;
+            a.y -= ny * push;
+            b.x += nx * push;
+            b.y += ny * push;
+          }
         }
       }
     }
@@ -1890,14 +2164,15 @@
       }
 
       updateHoldingHud();
-      sendWorldStateToGuest();
+      sendWorldStateToGuests();
     }
 
     function triggerActionForChef(chef) {
       if (!chef) return;
-      if (state.mode === 'online' && state.role === 'p2') {
-        sendNet({
-          type: 'p2_action',
+      if (state.mode === 'online' && state.mySlotId !== 'p1') {
+        sendToHost({
+          type: 'guest_action',
+          slotId: state.mySlotId,
           x: chef.x,
           y: chef.y,
           angle: chef.angle
@@ -1910,7 +2185,7 @@
         interactWithStationForChef(chef, near);
       } else if (chef.holding) {
         dropHoldingToFloorAtForChef(chef, chef.x + Math.cos(chef.angle) * 28, chef.y + Math.sin(chef.angle) * 28);
-        sendWorldStateToGuest();
+        sendWorldStateToGuests();
       } else {
         const fl = findNearbyFloorItem(chef.x, chef.y, 44);
         if (fl) {
@@ -1919,7 +2194,7 @@
           const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : '漢堡';
           showToast(`${chef.tag} 撿起地上的「${name}」`);
           updateHoldingHud();
-          sendWorldStateToGuest();
+          sendWorldStateToGuests();
         }
       }
     }
@@ -1949,7 +2224,7 @@
         spawnBurstParticles(clickedFloor.x, clickedFloor.y, '#38BDF8', 6);
         showToast(`${chef.tag} 從地上撿起「${name}」`);
         updateHoldingHud();
-        sendWorldStateToGuest();
+        sendWorldStateToGuests();
         return;
       }
 
@@ -1978,7 +2253,7 @@
 
       if (chef.holding) {
         dropHoldingToFloorAtForChef(chef, clickX, clickY);
-        sendWorldStateToGuest();
+        sendWorldStateToGuests();
         return;
       }
 
@@ -1994,7 +2269,7 @@
         showToast(`${chef.tag} 撿起地上的「${name}」`);
       }
       updateHoldingHud();
-      sendWorldStateToGuest();
+      sendWorldStateToGuests();
     }
 
     function handleCanvasClick(e) {
@@ -2004,11 +2279,10 @@
       const clickX = ((e.clientX - rect.left) / rect.width) * CANVAS_W;
       const clickY = ((e.clientY - rect.top) / rect.height) * CANVAS_H;
 
-      const myChef = state.role === 'p2' && state.chefs[1] ? state.chefs[1] : state.chefs[0];
+      const myChef = getMyChef();
       if (!myChef) return;
 
-      if (state.mode === 'online' && state.role === 'p2') {
-        // P2 點擊空白地板時本機也立刻移動並記錄軌跡，同時通知房主同步
+      if (state.mode === 'online' && state.mySlotId !== 'p1') {
         myChef.angle = Math.atan2(clickY - myChef.y, clickX - myChef.x);
         const clickedFloor = state.floorItems.find(fi => Math.hypot(clickX - fi.x, clickY - fi.y) <= 32);
         const clickedStation = state.stations.find(st =>
@@ -2018,10 +2292,11 @@
           myChef.x = clickX;
           myChef.y = clickY;
           resolveChefCollisions();
-          pushTrailPoint('p2', myChef.x, myChef.y);
+          pushTrailPoint(state.mySlotId, myChef.x, myChef.y);
         }
-        sendNet({
-          type: 'p2_action',
+        sendToHost({
+          type: 'guest_action',
+          slotId: state.mySlotId,
           x: myChef.x,
           y: myChef.y,
           angle: myChef.angle,
@@ -2087,7 +2362,7 @@
       lastFrameTime = now;
 
       if (!state.paused && !document.getElementById('screenGame').classList.contains('hidden')) {
-        const myChef = state.role === 'p2' && state.chefs[1] ? state.chefs[1] : state.chefs[0];
+        const myChef = getMyChef();
         let vx = 0;
         let vy = 0;
         if (state.keys['w'] || state.keys['arrowup'] || state.touchDir.up) vy -= 1;
@@ -2102,13 +2377,13 @@
           pushTrailPoint(myChef.id, myChef.x, myChef.y);
         }
 
-        // 衰減移動軌跡淡出效果
-        ['p1', 'p2'].forEach(key => {
+        ['p1', 'p2', 'p3', 'p4'].forEach(key => {
+          if (!state.trails[key]) return;
           state.trails[key].forEach(pt => { pt.life -= dt * 0.9; });
           state.trails[key] = state.trails[key].filter(pt => pt.life > 0);
         });
 
-        if (state.role === 'p1') {
+        if (state.mySlotId === 'p1') {
           for (const st of state.stations) {
             if (st.type !== 'grill' || !st.meatStatus || st.meatStatus === 'burnt_meat') continue;
             if (st.meatStatus === 'raw_meat') {
@@ -2273,7 +2548,9 @@
     function drawChefTrails(ctx) {
       const trailDefs = [
         { key: 'p1', color: 'rgba(37, 99, 235, 0.35)' },
-        { key: 'p2', color: 'rgba(13, 148, 136, 0.42)' }
+        { key: 'p2', color: 'rgba(13, 148, 136, 0.42)' },
+        { key: 'p3', color: 'rgba(217, 119, 6, 0.38)' },
+        { key: 'p4', color: 'rgba(147, 51, 234, 0.38)' }
       ];
       for (const td of trailDefs) {
         const pts = state.trails[td.key];
@@ -2296,18 +2573,18 @@
       }
     }
 
-    function drawSingleChef(ctx, c) {
+    function drawSingleChef(ctx, c, idx = 0) {
       const bob = c.walkPhase > 0 ? Math.abs(Math.sin(c.walkPhase)) * 3.5 : 0;
       const swing = c.walkPhase > 0 ? Math.sin(c.walkPhase) * 4 : 0;
       const skinHex = SKIN_COLORS[c.skin] || SKIN_COLORS.fair;
       const shadeHex = SKIN_SHADES[c.skin] || SKIN_SHADES.fair;
-      const isMe = c.id === state.role;
+      const isMe = c.id === state.mySlotId;
+      const slotColor = SLOT_COLORS[idx % SLOT_COLORS.length];
 
       ctx.save();
       ctx.translate(c.x, c.y);
 
-      // 腳下識別光圈（本機玩家為亮黃環，隊友為薄荷綠環）
-      ctx.strokeStyle = isMe ? '#F59E0B' : '#0D9488';
+      ctx.strokeStyle = isMe ? '#F59E0B' : slotColor;
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.ellipse(0, 19, 22, 9.5, 0, 0, Math.PI * 2);
@@ -2377,10 +2654,10 @@
 
       ctx.font = 'bold 10px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillStyle = c.tag === 'P1' ? '#2563EB' : '#0D9488';
+      ctx.fillStyle = slotColor;
       ctx.fillText(isMe ? `${c.tag}(你)` : c.tag, 0, -23);
 
-      ctx.fillStyle = c.tag === 'P1' ? '#2563EB' : '#0D9488';
+      ctx.fillStyle = slotColor;
       ctx.beginPath();
       ctx.arc(Math.cos(c.angle) * 25, Math.sin(c.angle) * 25, 5, 0, Math.PI * 2);
       ctx.fill();
@@ -2390,8 +2667,8 @@
         if (c.holding.kind === 'single') {
           drawItemMini(ctx, c.holding.item, 0, -36, 1.0);
         } else {
-          c.holding.items.forEach((k, idx) => {
-            drawItemMini(ctx, k, 0, -32 - idx * 5.5, 0.88);
+          c.holding.items.forEach((k, i) => {
+            drawItemMini(ctx, k, 0, -32 - i * 5.5, 0.88);
           });
         }
       }
@@ -2436,7 +2713,6 @@
       ctx.stroke();
       ctx.restore();
 
-      // 繪製雙方即時移動軌跡
       drawChefTrails(ctx);
 
       for (const fi of state.floorItems) {
@@ -2604,9 +2880,9 @@
         ctx.restore();
       }
 
-      for (const c of state.chefs) {
-        drawSingleChef(ctx, c);
-      }
+      state.chefs.forEach((c, idx) => {
+        drawSingleChef(ctx, c, idx);
+      });
     }
 
     function togglePause() {
@@ -2624,19 +2900,22 @@
       }
     }
 
-    // 任一方按下結算或時間到時，雙方都同步顯示結算頁面
     function requestFinishGame() {
       const stars = state.score >= 600 ? '★★★' : state.score >= 300 ? '★★☆' : '★☆☆';
       const result = {
         stars,
-        modeLabel: state.mode === 'online' ? `房號 #${state.roomCode} 雙裝置連線合作` : '單人遊玩',
+        modeLabel: state.mode === 'online' ? `房號 #${state.roomCode}（${state.chefs.length}人連線）` : '單人遊玩',
         score: state.score,
         servedCount: state.servedCount,
         maxCombo: state.maxCombo
       };
 
       if (state.mode === 'online') {
-        sendNet({ type: 'game_over', result });
+        if (state.mySlotId === 'p1') {
+          broadcastFromHost({ type: 'game_over', result });
+        } else {
+          sendToHost({ type: 'request_finish_from_guest' });
+        }
       }
       showSharedResultModal(result);
     }
@@ -2661,7 +2940,7 @@
         <p style="font-weight:800;">完成訂單：${res.servedCount} 份</p>
         <p style="font-weight:800;">最高連擊：x${res.maxCombo}</p>
         <p style="font-size:0.84rem;font-weight:700;color:#555;margin-top:8px;">
-          點擊「再次準備」會讓雙方同步回到準備大廳重新按準備；點擊「退出房間」則返回主選單。
+          點擊「再次準備」會回到準備大廳重新按準備；點擊「退出房間」則返回主選單。
         </p>
         <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
           <button class="btn btn-mint" onclick="handleReturnToReady()">再次準備</button>
@@ -2672,7 +2951,11 @@
 
     function handleReturnToReady() {
       if (state.mode === 'online') {
-        sendNet({ type: 'return_to_lobby' });
+        if (state.mySlotId === 'p1') {
+          broadcastFromHost({ type: 'return_to_lobby' });
+        } else {
+          sendToHost({ type: 'return_to_lobby' });
+        }
       }
       closeModal();
       resetToReadyLobby();
@@ -2680,11 +2963,11 @@
 
     function openHelpModal() {
       openModal(`
-        <h3 style="margin-top:0;">Crazy COOK V2.3 操作說明</h3>
+        <h3 style="margin-top:0;">Crazy COOK V2.4 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
-          <li><strong>雙裝置連線：</strong>第一台建立 4 碼房號，第二台輸入房號加入；雙方都按「按下準備」後由房主按「開始營業！」。</li>
-          <li><strong>即時走位與移動軌跡：</strong>雙方各自用 <code>WASD</code>／<code>方向鍵</code>、手機觸控方向鍵或點擊畫面移動，地上會顯示移動軌跡並即時同步給隊友。</li>
-          <li><strong>結算與再次準備：</strong>時間結束或按「結算」時，房主與第二位玩家都會同步跳出結算成績單，可點「再次準備」回到準備室再玩一局，或點「退出房間」。</li>
+          <li><strong>自選 2～4 人房間：</strong>在多人連線大廳選擇「2 人房 / 3 人房 / 4 人房」後建立房號，滿員且全員按「準備」後由房主按「開始營業！」。</li>
+          <li><strong>圖示化製作流程：</strong>上方訂單卡已改用與下方食材相同的圖示呈現堆疊順序，依序把對應食材疊上組裝台並送到輸送帶出餐。</li>
+          <li><strong>即時走位與同步結算：</strong>各方走位與移動軌跡即時同步，結算時全體同步跳出成績單並可點「再次準備」或「退出房間」。</li>
         </ol>
         <div style="text-align:right;margin-top:14px;">
           <button class="btn btn-mint" onclick="closeModal()">知道了</button>
