@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crazy COOK — 美式復古快餐廚房 V1.7</title>
+  <title>Crazy COOK — 美式復古快餐廚房 V1.8</title>
   <style>
     :root {
       --bg-cream: #FFF8E7;
@@ -216,13 +216,13 @@
     .customizer-controls {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
 
     .custom-group {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
       flex-wrap: wrap;
     }
 
@@ -246,21 +246,6 @@
       transform: scale(1.16);
       outline: 3px solid var(--cobalt);
       outline-offset: 2px;
-    }
-
-    .pill-choice {
-      padding: 6px 11px;
-      border-radius: 10px;
-      border: 2.5px solid var(--ink);
-      background: #FFF;
-      font-weight: 800;
-      font-size: 0.85rem;
-      cursor: pointer;
-    }
-
-    .pill-choice.active {
-      background: var(--mustard);
-      box-shadow: 2px 2px 0 var(--ink);
     }
 
     .mode-grid {
@@ -504,7 +489,7 @@
     <div class="brand-badge">
       <span class="brand-icon-box" id="topLogoIcon"></span>
       <span>CRAZY COOK</span>
-      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V1.7</span>
+      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V1.8</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-light" onclick="openHelpModal()">玩法與操作說明</button>
@@ -531,7 +516,7 @@
         <span style="font-size:0.85rem;font-weight:800;color:#444;">最高營業額：$<span id="bestScoreDisplay">0</span></span>
       </div>
 
-      <!-- 主廚外觀自訂區 -->
+      <!-- 主廚外觀自訂區（移除髮型欄，擴充 11 種代表色綁帶） -->
       <div class="customizer-panel">
         <div class="avatar-preview-box">
           <div id="avatarPreviewSvg"></div>
@@ -545,20 +530,18 @@
             <button type="button" class="swatch-btn" data-skin="dark" style="background:#7C4A2D;" title="深色／黑膚色" onclick="setSkin('dark', this)"></button>
           </div>
           <div class="custom-group">
-            <span class="custom-label">預設髮型：</span>
-            <button type="button" class="pill-choice active" data-hair="short" onclick="setHair('short', this)">俐落短髮</button>
-            <button type="button" class="pill-choice" data-hair="twintails" onclick="setHair('twintails', this)">俏麗雙馬尾</button>
-            <button type="button" class="pill-choice" data-hair="curly" onclick="setHair('curly', this)">蓬鬆捲髮</button>
-            <button type="button" class="pill-choice" data-hair="sidepart" onclick="setHair('sidepart', this)">復古旁分</button>
-            <button type="button" class="pill-choice" data-hair="spiky" onclick="setHair('spiky', this)">動感刺蝟頭</button>
-          </div>
-          <div class="custom-group">
             <span class="custom-label">廚師帽綁帶：</span>
-            <button type="button" class="swatch-btn active" data-band="#E63946" style="background:#E63946;" title="美式紅" onclick="setBand('#E63946', this)"></button>
-            <button type="button" class="swatch-btn" data-band="#2563EB" style="background:#2563EB;" title="寶石藍" onclick="setBand('#2563EB', this)"></button>
-            <button type="button" class="swatch-btn" data-band="#2A9D8F" style="background:#2A9D8F;" title="薄荷綠" onclick="setBand('#2A9D8F', this)"></button>
-            <button type="button" class="swatch-btn" data-band="#9333EA" style="background:#9333EA;" title="霓虹紫" onclick="setBand('#9333EA', this)"></button>
-            <button type="button" class="swatch-btn" data-band="#111827" style="background:#111827;" title="經典黑" onclick="setBand('#111827', this)"></button>
+            <button type="button" class="swatch-btn active" data-band="#E63946" style="background:#E63946;" title="紅" onclick="setBand('#E63946', '紅', this)"></button>
+            <button type="button" class="swatch-btn" data-band="#F97316" style="background:#F97316;" title="橙" onclick="setBand('#F97316', '橙', this)"></button>
+            <button type="button" class="swatch-btn" data-band="#FACC15" style="background:#FACC15;" title="黃" onclick="setBand('#FACC15', '黃', this)"></button>
+            <button type="button" class="swatch-btn" data-band="#22C55E" style="background:#22C55E;" title="綠" onclick="setBand('#22C55E', '綠', this)"></button>
+            <button type="button" class="swatch-btn" data-band="#2563EB" style="background:#2563EB;" title="藍" onclick="setBand('#2563EB', '藍', this)"></button>
+            <button type="button" class="swatch-btn" data-band="#1E1B4B" style="background:#1E1B4B;" title="靛" onclick="setBand('#1E1B4B', '靛', this)"></button>
+            <button type="button" class="swatch-btn" data-band="#9333EA" style="background:#9333EA;" title="紫" onclick="setBand('#9333EA', '紫', this)"></button>
+            <button type="button" class="swatch-btn" data-band="#F472B6" style="background:#F472B6;" title="粉紅" onclick="setBand('#F472B6', '粉紅', this)"></button>
+            <button type="button" class="swatch-btn" data-band="#854D0E" style="background:#854D0E;" title="棕色" onclick="setBand('#854D0E', '棕色', this)"></button>
+            <button type="button" class="swatch-btn" data-band="#111827" style="background:#111827;" title="黑" onclick="setBand('#111827', '黑', this)"></button>
+            <button type="button" class="swatch-btn" data-band="#FFFFFF" style="background:#FFFFFF;" title="白" onclick="setBand('#FFFFFF', '白', this)"></button>
           </div>
         </div>
       </div>
@@ -716,8 +699,8 @@
     const state = {
       playerName: '漢堡小當家',
       skin: 'fair',
-      hair: 'short',
       band: '#E63946',
+      bandName: '紅',
       soundOn: true,
       mode: 'solo',
       roomCode: null,
@@ -787,14 +770,6 @@
       dark: '深色／黑膚色'
     };
 
-    const HAIR_NAMES = {
-      short: '俐落短髮',
-      twintails: '俏麗雙馬尾',
-      curly: '蓬鬆捲髮',
-      sidepart: '復古旁分',
-      spiky: '動感刺蝟頭'
-    };
-
     function svgBurgerBadge(size = 26) {
       return `<svg width="${size}" height="${size}" viewBox="0 0 36 36" fill="none">
         <defs>
@@ -844,30 +819,12 @@
       const skinHex = SKIN_COLORS[cfg.skin] || SKIN_COLORS.fair;
       const shadeHex = SKIN_SHADES[cfg.skin] || SKIN_SHADES.fair;
       const bandHex = cfg.band || '#E63946';
-      const hairType = cfg.hair || 'short';
-
-      let hairBack = '';
-      let hairFront = '';
-      if (hairType === 'short') {
-        hairFront = `<path d="M26 42C26 35 32 32 40 32C48 32 54 35 54 42C50 38 44 37 40 37C35 37 30 39 26 42Z" fill="#3B2314" stroke="#1A1A1A" stroke-width="2.5"/>`;
-      } else if (hairType === 'twintails') {
-        hairBack = `<circle cx="20.5" cy="46" r="8.5" fill="#3B2314" stroke="#1A1A1A" stroke-width="2.5"/><circle cx="59.5" cy="46" r="8.5" fill="#3B2314" stroke="#1A1A1A" stroke-width="2.5"/>`;
-        hairFront = `<path d="M26 41C31 35 49 35 54 41" stroke="#3B2314" stroke-width="5.5" stroke-linecap="round"/>`;
-      } else if (hairType === 'curly') {
-        hairFront = `<circle cx="26" cy="41" r="6.2" fill="#3B2314" stroke="#1A1A1A" stroke-width="2.2"/><circle cx="33" cy="36" r="6.2" fill="#3B2314" stroke="#1A1A1A" stroke-width="2.2"/><circle cx="40" cy="34" r="6.8" fill="#3B2314" stroke="#1A1A1A" stroke-width="2.2"/><circle cx="47" cy="36" r="6.2" fill="#3B2314" stroke="#1A1A1A" stroke-width="2.2"/><circle cx="54" cy="41" r="6.2" fill="#3B2314" stroke="#1A1A1A" stroke-width="2.2"/>`;
-      } else if (hairType === 'sidepart') {
-        hairFront = `<path d="M25 43C26 33 36 31 46 33C51 34 54 38 55 43L44 38L25 43Z" fill="#3B2314" stroke="#1A1A1A" stroke-width="2.5"/>`;
-      } else if (hairType === 'spiky') {
-        hairFront = `<polygon points="25,42 29,31 35,36 40,28 45,36 51,31 55,42" fill="#3B2314" stroke="#1A1A1A" stroke-width="2.5" stroke-linejoin="round"/>`;
-      }
 
       return `<svg width="${size}" height="${size}" viewBox="0 0 80 80" fill="none">
-        ${hairBack}
         <path d="M18 75C18 62 27 56 40 56C53 56 62 62 62 75H18Z" fill="#F8FAFC" stroke="#1A1A1A" stroke-width="3"/>
         <path d="M31 57L40 68L49 57" fill="none" stroke="${bandHex}" stroke-width="4.2" stroke-linecap="round"/>
         <circle cx="40" cy="45" r="14" fill="${skinHex}" stroke="#1A1A1A" stroke-width="3"/>
         <path d="M28 51C32 56 48 56 52 51C48 58 32 58 28 51Z" fill="${shadeHex}" opacity="0.55"/>
-        ${hairFront}
         <ellipse cx="34.5" cy="46" rx="2.3" ry="2.8" fill="#1A1A1A"/>
         <ellipse cx="45.5" cy="46" rx="2.3" ry="2.8" fill="#1A1A1A"/>
         <circle cx="35.3" cy="45" r="0.9" fill="#FFF"/>
@@ -890,7 +847,7 @@
     function refreshCustomizerPreview() {
       document.getElementById('avatarPreviewSvg').innerHTML = renderCustomChefSvg(state, 84);
       document.getElementById('avatarPreviewLabel').textContent =
-        `${SKIN_NAMES[state.skin]} · ${HAIR_NAMES[state.hair]}`;
+        `${SKIN_NAMES[state.skin]} · 綁帶：${state.bandName}`;
     }
 
     function setSkin(skin, btn) {
@@ -900,15 +857,9 @@
       refreshCustomizerPreview();
     }
 
-    function setHair(hair, btn) {
-      state.hair = hair;
-      document.querySelectorAll('.pill-choice[data-hair]').forEach(el => el.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-      refreshCustomizerPreview();
-    }
-
-    function setBand(color, btn) {
+    function setBand(color, name, btn) {
       state.band = color;
+      state.bandName = name;
       document.querySelectorAll('.swatch-btn[data-band]').forEach(el => el.classList.remove('active'));
       if (btn) btn.classList.add('active');
       refreshCustomizerPreview();
@@ -936,8 +887,8 @@
         ready: true,
         isMe: true,
         skin: state.skin,
-        hair: state.hair,
-        band: state.band
+        band: state.band,
+        bandName: state.bandName
       }];
       document.getElementById('roomModeTag').textContent = '單人模式';
       document.getElementById('roomCodeBadge').textContent = 'SOLO';
@@ -965,8 +916,8 @@
         ready: false,
         isMe: true,
         skin: state.skin,
-        hair: state.hair,
-        band: state.band
+        band: state.band,
+        bandName: state.bandName
       }];
       document.getElementById('roomModeTag').textContent = `多人模式（上限 ${maxP} 人）`;
       document.getElementById('roomCodeBadge').textContent = `房號 #${code}`;
@@ -990,8 +941,8 @@
       state.roomCode = code;
       state.maxPlayers = 4;
       state.players = [
-        { id: 'me', name: state.playerName, ready: false, isMe: true, skin: state.skin, hair: state.hair, band: state.band },
-        { id: 'b1', name: '炸薯條夥伴', ready: true, isMe: false, skin: 'yellow', hair: 'sidepart', band: '#2563EB' }
+        { id: 'me', name: state.playerName, ready: false, isMe: true, skin: state.skin, band: state.band, bandName: state.bandName },
+        { id: 'b1', name: '炸薯條夥伴', ready: true, isMe: false, skin: 'yellow', band: '#2563EB', bandName: '藍' }
       ];
       document.getElementById('roomModeTag').textContent = '多人模式（上限 4 人）';
       document.getElementById('roomCodeBadge').textContent = `房號 #${code}`;
@@ -1003,9 +954,9 @@
     function addSimulatedBot() {
       if (state.players.length >= state.maxPlayers) return;
       const presets = [
-        { name: '起司大亨', skin: 'fair', hair: 'twintails', band: '#2A9D8F' },
-        { name: '奶昔主廚', skin: 'dark', hair: 'curly', band: '#9333EA' },
-        { name: '可樂達人', skin: 'yellow', hair: 'spiky', band: '#111827' }
+        { name: '起司大亨', skin: 'fair', band: '#22C55E', bandName: '綠' },
+        { name: '奶昔主廚', skin: 'dark', band: '#F472B6', bandName: '粉紅' },
+        { name: '可樂達人', skin: 'yellow', band: '#F97316', bandName: '橙' }
       ];
       const pick = presets[(state.players.length - 1) % presets.length];
       state.players.push({
@@ -1014,8 +965,8 @@
         ready: false,
         isMe: false,
         skin: pick.skin,
-        hair: pick.hair,
-        band: pick.band
+        band: pick.band,
+        bandName: pick.bandName
       });
       renderReadyPlayers();
     }
@@ -1048,7 +999,7 @@
         div.innerHTML = `
           ${renderCustomChefSvg(p, 66)}
           <div style="font-weight:950;">${p.name} ${p.isMe ? '(你)' : ''}</div>
-          <div style="font-size:0.78rem;color:#555;font-weight:700;">${HAIR_NAMES[p.hair] || ''}</div>
+          <div style="font-size:0.78rem;color:#555;font-weight:700;">綁帶：${p.bandName || '紅'}</div>
           <span class="status-pill">${p.ready ? '已準備' : '等待準備'}</span>
         `;
         grid.appendChild(div);
@@ -2063,7 +2014,7 @@
 
     function openHelpModal() {
       openModal(`
-        <h3 style="margin-top:0;">Crazy COOK V1.7 操作說明</h3>
+        <h3 style="margin-top:0;">Crazy COOK V1.8 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
           <li><strong>自由移動：</strong>按住 <code>WASD</code> 或方向鍵在廚房無格線平滑走動。</li>
           <li><strong>左鍵拿取／放下／丟地上：</strong>點食材箱、煎台、砧板、組裝台或置物檯面按左鍵拿取或放下；手上拿著物品點空白地板會丟在地上，點地上物品可撿起。</li>
