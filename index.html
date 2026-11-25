@@ -586,6 +586,76 @@
       overflow-y: auto;
     }
 
+    .audio-control-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .audio-note-btn {
+      width: 42px;
+      height: 40px;
+      padding: 0;
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .audio-popover {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: 268px;
+      background: #FFFDF8;
+      color: var(--ink);
+      border: 3.5px solid var(--ink);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      z-index: 120;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .audio-popover.open {
+      display: flex;
+    }
+
+    .audio-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .audio-row-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.86rem;
+      font-weight: 900;
+    }
+
+    .audio-mini-toggle {
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      background: #FFF;
+      cursor: pointer;
+    }
+
+    .audio-mini-toggle.muted {
+      background: #FEE2E2;
+      color: #B91C1C;
+    }
+
+    .audio-slider {
+      width: 100%;
+      accent-color: var(--diner-red);
+      cursor: pointer;
+    }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -596,9 +666,31 @@
       <span>CRAZY COOK</span>
       <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V2.9</span>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
       <button class="btn btn-light" onclick="openHelpModal()">玩法與操作說明</button>
-      <button class="btn btn-yellow" id="soundToggleBtn" onclick="toggleSound()">音效：開</button>
+      <div class="audio-control-wrap" id="audioControlWrap">
+        <button type="button" class="btn btn-yellow audio-note-btn" id="musicNoteBtn" title="調整背景音樂與互動音效音量" aria-label="調整背景音樂與互動音效音量" onclick="toggleAudioPopover(event)">♪</button>
+        <div class="audio-popover" id="audioPopover" onclick="event.stopPropagation()">
+          <div style="font-weight:950;font-size:0.92rem;border-bottom:2px solid #E5D7B8;padding-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+            <span>音量獨立控制</span>
+            <span style="font-size:0.74rem;color:#64748B;">BGM / SFX</span>
+          </div>
+          <div class="audio-row">
+            <div class="audio-row-head">
+              <span>背景音樂（<span id="bgmVolPct">35%</span>）</span>
+              <button type="button" class="audio-mini-toggle" id="bgmMuteBtn" onclick="toggleBgmMute()">靜音</button>
+            </div>
+            <input type="range" min="0" max="100" value="35" class="audio-slider" id="bgmVolumeSlider" oninput="onBgmVolumeInput(this.value)" />
+          </div>
+          <div class="audio-row">
+            <div class="audio-row-head">
+              <span>互動音效（<span id="sfxVolPct">75%</span>）</span>
+              <button type="button" class="audio-mini-toggle" id="sfxMuteBtn" onclick="toggleSfxMute()">靜音</button>
+            </div>
+            <input type="range" min="0" max="100" value="75" class="audio-slider" id="sfxVolumeSlider" oninput="onSfxVolumeInput(this.value)" />
+          </div>
+        </div>
+      </div>
     </div>
   </header>
   <div class="checker-strip"></div>
@@ -857,7 +949,6 @@
     let netTickTimer = null;
     let pendingIntent = null;
 
-    // 支援單點或套餐組合：漢堡組裝台端起（burger）、油炸機端起（fries）、飲料機端起（cola）
     const RECIPES = [
       { id: 'classic_burger', name: '經典美式起司堡', price: 120, requiredParts: [{ kind: 'burger', items: ['bun', 'patty', 'cheese', 'bun'] }] },
       { id: 'veggie_burger', name: '田園鮮蔬堡', price: 110, requiredParts: [{ kind: 'burger', items: ['bun', 'lettuce', 'tomato', 'bun'] }] },
@@ -1958,7 +2049,7 @@
         if (!chef.holding) {
           chef.holding = { kind: 'single', item: st.item };
           spawnBurstParticles(scx, scy, '#FBBF24', 5);
-          showToast(`${chef.tag} 拿起 ${ITEM_LABELS[st.item]}`);
+          playSfx('pickup'); showToast(`${chef.tag} 拿起 ${ITEM_LABELS[st.item]}`);
         } else {
           showToast(`${chef.tag} 手上已有物品`);
         }
@@ -1969,7 +2060,7 @@
           st.overcookSec = 0;
           chef.holding = null;
           spawnBurstParticles(scx, scy, '#FB7185', 6);
-          showToast(`${chef.tag} 將生肉排放上 ${st.label}`);
+          playSfx('grill'); showToast(`${chef.tag} 將生肉排放上 ${st.label}`);
         } else if (st.meatStatus === 'patty' || st.meatStatus === 'burnt_meat') {
           if (!chef.holding) {
             chef.holding = { kind: 'single', item: st.meatStatus };
@@ -1978,7 +2069,7 @@
             st.cookProgress = 0;
             st.overcookSec = 0;
             spawnBurstParticles(scx, scy, '#D97706', 6);
-            showToast(`${chef.tag} 拿起${picked}`);
+            playSfx('pickup'); showToast(`${chef.tag} 拿起${picked}`);
           } else {
             showToast(`${chef.tag} 手上已有物品`);
           }
@@ -1988,21 +2079,21 @@
           st.item = 'raw_lettuce';
           st.chops = 0;
           chef.holding = null;
-          showToast(`${chef.tag} 放上整顆生菜`);
+          playSfx('drop'); showToast(`${chef.tag} 放上整顆生菜`);
         } else if (st.item === 'raw_lettuce' && !chef.holding) {
           st.chops += 1;
           spawnBurstParticles(scx, scy, '#4ADE80', 6);
           if (st.chops >= 2) {
             st.item = 'lettuce';
-            showToast('生菜切好了！可拿起或疊進漢堡');
+            playSfx('chop'); showToast('生菜切好了！可拿起或疊進漢堡');
           } else {
-            showToast(`切菜中（${st.chops}/2）`);
+            playSfx('chop'); showToast(`切菜中（${st.chops}/2）`);
           }
         } else if (st.item === 'lettuce' && !chef.holding) {
           chef.holding = { kind: 'single', item: 'lettuce' };
           st.item = null;
           st.chops = 0;
-          showToast(`${chef.tag} 拿起切絲生菜`);
+          playSfx('pickup'); showToast(`${chef.tag} 拿起切絲生菜`);
         }
       } else if (st.type === 'assembly') {
         const norm = normalizePayloadForAssembly(chef.holding);
@@ -2011,7 +2102,7 @@
           const addedName = ITEM_LABELS[norm.item];
           chef.holding = null;
           spawnBurstParticles(scx, scy, '#FACC15', 7);
-          showToast(`${chef.tag} 疊上「${addedName}」（${st.stack.length} 層）`);
+          playSfx('stack'); showToast(`${chef.tag} 疊上「${addedName}」（${st.stack.length} 層）`);
         } else if (norm && norm.kind === 'burger') {
           if (st.stack.length === 0) {
             st.stack = [...norm.items];
@@ -2026,7 +2117,7 @@
         } else if (!chef.holding && st.stack.length > 0) {
           chef.holding = { kind: 'burger', items: [...st.stack] };
           st.stack = [];
-          showToast(`${chef.tag} 端起漢堡，去輸送帶出餐！`);
+          playSfx('pickup'); showToast(`${chef.tag} 端起漢堡，去輸送帶出餐！`);
         } else if (chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'burnt_meat') {
           showToast('焦黑廢肉不能疊進漢堡，請丟垃圾桶');
         }
@@ -2046,13 +2137,13 @@
         if (chef.holding) {
           chef.holding = null;
           spawnBurstParticles(scx, scy, '#EF4444', 6);
-          showToast(`${chef.tag} 已丟進垃圾桶`);
+          playSfx('drop'); showToast(`${chef.tag} 已丟進垃圾桶`);
         }
       } else if (st.type === 'freezer') {
         if (!chef.holding) {
           chef.holding = { kind: 'single', item: 'frozen_fries' };
           spawnBurstParticles(scx, scy, '#60A5FA', 5);
-          showToast(`${chef.tag} 從冷凍櫃拿出冷凍薯條，去油炸機炸熟！`);
+          playSfx('pickup'); showToast(`${chef.tag} 從冷凍櫃拿出冷凍薯條，去油炸機炸熟！`);
         } else {
           showToast(`${chef.tag} 手上已有物品`);
         }
@@ -2062,21 +2153,21 @@
           st.friesProgress = 0;
           chef.holding = null;
           spawnBurstParticles(scx, scy, '#FACC15', 6);
-          showToast(`${chef.tag} 將冷凍薯條放進油炸機`);
+          playSfx('drop'); showToast(`${chef.tag} 將冷凍薯條放進油炸機`);
         } else if (st.item === 'frozen_fries' && !chef.holding) {
           st.friesProgress += 1;
           spawnBurstParticles(scx, scy, '#FACC15', 6);
           if (st.friesProgress >= 2) {
             st.item = 'fries';
-            showToast('炸薯條完成了！可端去輸送帶出餐');
+            playSfx('chop'); showToast('炸薯條完成了！可端去輸送帶出餐');
           } else {
-            showToast(`油炸中（${st.friesProgress}/2）`);
+            playSfx('chop'); showToast(`油炸中（${st.friesProgress}/2）`);
           }
         } else if (st.item === 'fries' && !chef.holding) {
           chef.holding = { kind: 'fries' };
           st.item = null;
           st.friesProgress = 0;
-          showToast(`${chef.tag} 端起金黃炸薯條，去輸送帶出餐！`);
+          playSfx('pickup'); showToast(`${chef.tag} 端起金黃炸薯條，去輸送帶出餐！`);
         }
       } else if (st.type === 'dispenser') {
         if (!st.drinkStatus && !chef.holding) {
@@ -2084,12 +2175,12 @@
           st.fillProgress = 0;
           st.overfillSec = 0;
           spawnBurstParticles(scx, scy, '#38BDF8', 5);
-          showToast(`${chef.tag} 啟動 ${st.label} 裝可樂中...`);
+          playSfx('cola'); showToast(`${chef.tag} 啟動 ${st.label} 裝可樂中...`);
         } else if (st.drinkStatus === 'ready' || st.drinkStatus === 'burnt_cola') {
           if (!chef.holding) {
             if (st.drinkStatus === 'ready') {
               chef.holding = { kind: 'cola' };
-              showToast(`${chef.tag} 端起冰涼可樂，去輸送帶出餐！`);
+              playSfx('pickup'); showToast(`${chef.tag} 端起冰涼可樂，去輸送帶出餐！`);
             } else {
               chef.holding = { kind: 'single', item: 'burnt_cola' };
               showToast(`${chef.tag} 拿起變質可樂，請丟垃圾桶`);
@@ -2287,14 +2378,14 @@
           state.maxCombo = Math.max(state.maxCombo, state.combo);
           state.servedCount += 1;
           if (!state.orders.length) state.orders.push(generateOrder());
-          showToast(`整份訂單完成 +$${bonus}！`);
+          playSfx('serveSuccess'); showToast(`整份訂單完成 +$${bonus}！`);
         } else {
-          showToast(`已送出「${order.name}」其中一項，還差 ${order.requiredParts.length} 項！`);
+          playSfx('stack'); showToast(`已送出「${order.name}」其中一項，還差 ${order.requiredParts.length} 項！`);
         }
       } else {
         state.combo = 1;
         spawnBurstParticles(fx, fy, '#EF4444', 8);
-        showToast('送出的餐點或順序與目前訂單不符，連擊歸零');
+        playSfx('serveFail'); showToast('送出的餐點或順序與目前訂單不符，連擊歸零');
       }
 
       if (state.score > state.bestScore) {
@@ -3050,6 +3141,221 @@
 
     document.getElementById('kitchenCanvas').addEventListener('click', handleCanvasClick);
 
+    const audioState = {
+      ctx: null,
+      bgmGain: null,
+      sfxGain: null,
+      bgmVolume: Number(localStorage.getItem('crazyCookBgmVol') ?? 35),
+      sfxVolume: Number(localStorage.getItem('crazyCookSfxVol') ?? 75),
+      bgmMuted: localStorage.getItem('crazyCookBgmMuted') === '1',
+      sfxMuted: localStorage.getItem('crazyCookSfxMuted') === '1',
+      bgmTimer: null,
+      bgmStep: 0
+    };
+
+    const BGM_BASS_NOTES = [130.81, 164.81, 196.00, 164.81, 146.83, 174.61, 220.00, 174.61];
+    const BGM_LEAD_NOTES = [523.25, 0, 659.25, 783.99, 659.25, 587.33, 523.25, 0];
+
+    function ensureAudioContext() {
+      if (!audioState.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+        const ctx = new AudioCtx();
+        const bgmGain = ctx.createGain();
+        const sfxGain = ctx.createGain();
+        bgmGain.connect(ctx.destination);
+        sfxGain.connect(ctx.destination);
+        audioState.ctx = ctx;
+        audioState.bgmGain = bgmGain;
+        audioState.sfxGain = sfxGain;
+        applyAudioVolumes();
+      }
+      if (audioState.ctx.state === 'suspended') {
+        audioState.ctx.resume().catch(() => {});
+      }
+      startBgmLoopIfNeeded();
+      return audioState.ctx;
+    }
+
+    function applyAudioVolumes() {
+      const effectiveBgm = audioState.bgmMuted ? 0 : (audioState.bgmVolume / 100) * 0.22;
+      const effectiveSfx = audioState.sfxMuted ? 0 : (audioState.sfxVolume / 100) * 0.45;
+      if (audioState.bgmGain && audioState.ctx) {
+        audioState.bgmGain.gain.setTargetAtTime(effectiveBgm, audioState.ctx.currentTime, 0.03);
+      }
+      if (audioState.sfxGain && audioState.ctx) {
+        audioState.sfxGain.gain.setTargetAtTime(effectiveSfx, audioState.ctx.currentTime, 0.02);
+      }
+
+      const bgmPct = document.getElementById('bgmVolPct');
+      const sfxPct = document.getElementById('sfxVolPct');
+      const bgmSlider = document.getElementById('bgmVolumeSlider');
+      const sfxSlider = document.getElementById('sfxVolumeSlider');
+      const bgmMuteBtn = document.getElementById('bgmMuteBtn');
+      const sfxMuteBtn = document.getElementById('sfxMuteBtn');
+      const noteBtn = document.getElementById('musicNoteBtn');
+
+      if (bgmPct) bgmPct.textContent = audioState.bgmMuted ? '靜音' : `${audioState.bgmVolume}%`;
+      if (sfxPct) sfxPct.textContent = audioState.sfxMuted ? '靜音' : `${audioState.sfxVolume}%`;
+      if (bgmSlider) bgmSlider.value = String(audioState.bgmVolume);
+      if (sfxSlider) sfxSlider.value = String(audioState.sfxVolume);
+      if (bgmMuteBtn) {
+        bgmMuteBtn.textContent = audioState.bgmMuted ? '已靜音' : '靜音';
+        bgmMuteBtn.classList.toggle('muted', audioState.bgmMuted);
+      }
+      if (sfxMuteBtn) {
+        sfxMuteBtn.textContent = audioState.sfxMuted ? '已靜音' : '靜音';
+        sfxMuteBtn.classList.toggle('muted', audioState.sfxMuted);
+      }
+      if (noteBtn) {
+        const allOff = (audioState.bgmMuted || audioState.bgmVolume === 0) && (audioState.sfxMuted || audioState.sfxVolume === 0);
+        noteBtn.style.opacity = allOff ? '0.6' : '1';
+      }
+    }
+
+    function startBgmLoopIfNeeded() {
+      if (audioState.bgmTimer || !audioState.ctx || !audioState.bgmGain) return;
+      audioState.bgmTimer = setInterval(() => {
+        if (!audioState.ctx || audioState.ctx.state !== 'running' || state.paused) return;
+        const now = audioState.ctx.currentTime;
+        const idx = audioState.bgmStep % BGM_BASS_NOTES.length;
+
+        const bassOsc = audioState.ctx.createOscillator();
+        const bassEnv = audioState.ctx.createGain();
+        bassOsc.type = 'triangle';
+        bassOsc.frequency.setValueAtTime(BGM_BASS_NOTES[idx], now);
+        bassEnv.gain.setValueAtTime(0.001, now);
+        bassEnv.gain.linearRampToValueAtTime(0.35, now + 0.02);
+        bassEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+        bassOsc.connect(bassEnv);
+        bassEnv.connect(audioState.bgmGain);
+        bassOsc.start(now);
+        bassOsc.stop(now + 0.25);
+
+        const leadFreq = BGM_LEAD_NOTES[idx];
+        if (leadFreq > 0) {
+          const leadOsc = audioState.ctx.createOscillator();
+          const leadEnv = audioState.ctx.createGain();
+          leadOsc.type = 'sine';
+          leadOsc.frequency.setValueAtTime(leadFreq, now);
+          leadEnv.gain.setValueAtTime(0.001, now);
+          leadEnv.gain.linearRampToValueAtTime(0.18, now + 0.02);
+          leadEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+          leadOsc.connect(leadEnv);
+          leadEnv.connect(audioState.bgmGain);
+          leadOsc.start(now);
+          leadOsc.stop(now + 0.19);
+        }
+
+        audioState.bgmStep += 1;
+      }, 280);
+    }
+
+    function playSfx(type) {
+      const ctx = ensureAudioContext();
+      if (!ctx || !audioState.sfxGain) return;
+      const now = ctx.currentTime;
+
+      const makeTone = (freq, endFreq, dur, waveType = 'sine', peak = 0.35, delay = 0) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = waveType;
+        osc.frequency.setValueAtTime(freq, now + delay);
+        if (endFreq && endFreq !== freq) {
+          osc.frequency.exponentialRampToValueAtTime(Math.max(40, endFreq), now + delay + dur);
+        }
+        gain.gain.setValueAtTime(0.001, now + delay);
+        gain.gain.linearRampToValueAtTime(peak, now + delay + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + delay + dur);
+        osc.connect(gain);
+        gain.connect(audioState.sfxGain);
+        osc.start(now + delay);
+        osc.stop(now + delay + dur + 0.02);
+      };
+
+      if (type === 'pickup') {
+        makeTone(340, 560, 0.09, 'triangle', 0.35);
+      } else if (type === 'drop') {
+        makeTone(280, 150, 0.1, 'sine', 0.32);
+      } else if (type === 'chop') {
+        makeTone(780, 220, 0.07, 'square', 0.22);
+      } else if (type === 'grill') {
+        makeTone(520, 410, 0.12, 'sawtooth', 0.18);
+        makeTone(640, 480, 0.11, 'sawtooth', 0.16, 0.05);
+      } else if (type === 'stack') {
+        makeTone(440, 660, 0.08, 'triangle', 0.32);
+      } else if (type === 'cola') {
+        makeTone(300, 720, 0.16, 'sine', 0.25);
+      } else if (type === 'serveSuccess') {
+        makeTone(523.25, 523.25, 0.11, 'triangle', 0.36, 0);
+        makeTone(659.25, 659.25, 0.11, 'triangle', 0.36, 0.09);
+        makeTone(783.99, 1046.5, 0.18, 'triangle', 0.4, 0.18);
+      } else if (type === 'serveFail') {
+        makeTone(240, 140, 0.18, 'sawtooth', 0.26, 0);
+        makeTone(170, 110, 0.2, 'sawtooth', 0.24, 0.12);
+      } else {
+        makeTone(480, 520, 0.05, 'sine', 0.2);
+      }
+    }
+
+    function toggleAudioPopover(e) {
+      if (e) e.stopPropagation();
+      ensureAudioContext();
+      const pop = document.getElementById('audioPopover');
+      if (pop) pop.classList.toggle('open');
+    }
+
+    function onBgmVolumeInput(val) {
+      ensureAudioContext();
+      audioState.bgmVolume = Math.max(0, Math.min(100, Number(val) || 0));
+      if (audioState.bgmVolume > 0 && audioState.bgmMuted) {
+        audioState.bgmMuted = false;
+        localStorage.setItem('crazyCookBgmMuted', '0');
+      }
+      localStorage.setItem('crazyCookBgmVol', String(audioState.bgmVolume));
+      applyAudioVolumes();
+    }
+
+    function onSfxVolumeInput(val) {
+      ensureAudioContext();
+      audioState.sfxVolume = Math.max(0, Math.min(100, Number(val) || 0));
+      if (audioState.sfxVolume > 0 && audioState.sfxMuted) {
+        audioState.sfxMuted = false;
+        localStorage.setItem('crazyCookSfxMuted', '0');
+      }
+      localStorage.setItem('crazyCookSfxVol', String(audioState.sfxVolume));
+      applyAudioVolumes();
+      playSfx('pickup');
+    }
+
+    function toggleBgmMute() {
+      ensureAudioContext();
+      audioState.bgmMuted = !audioState.bgmMuted;
+      localStorage.setItem('crazyCookBgmMuted', audioState.bgmMuted ? '1' : '0');
+      applyAudioVolumes();
+    }
+
+    function toggleSfxMute() {
+      ensureAudioContext();
+      audioState.sfxMuted = !audioState.sfxMuted;
+      localStorage.setItem('crazyCookSfxMuted', audioState.sfxMuted ? '1' : '0');
+      applyAudioVolumes();
+      if (!audioState.sfxMuted) playSfx('pickup');
+    }
+
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('audioControlWrap');
+      const pop = document.getElementById('audioPopover');
+      if (pop && pop.classList.contains('open') && wrap && !wrap.contains(e.target)) {
+        pop.classList.remove('open');
+      }
+    });
+
+    window.addEventListener('pointerdown', () => {
+      ensureAudioContext();
+    }, { passive: true });
+
+    applyAudioVolumes();
     initStaticIcons();
   </script>
 </body>
