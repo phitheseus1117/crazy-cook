@@ -586,6 +586,7 @@
       overflow-y: auto;
     }
 
+
     .audio-control-wrap {
       position: relative;
       display: inline-flex;
@@ -2237,32 +2238,40 @@
       }
     }
 
+    // 需先走近台子／地上物品的可互動範圍（碰撞箱＋操作半徑）後，點擊才可互動，不再直接瞬移過去拿
+    function isChefInStationReach(chef, st) {
+      if (!chef || !st) return false;
+      return distToRectEdge(chef.x, chef.y, st) <= (chef.radius + 18);
+    }
+
     function handlePointerActionForChef(chef, clickX, clickY) {
       if (!chef) return;
       chef.angle = Math.atan2(clickY - chef.y, clickX - chef.x);
 
       const clickedFloor = state.floorItems.find(fi => Math.hypot(clickX - fi.x, clickY - fi.y) <= 32);
       if (clickedFloor) {
-        const previousHolding = chef.holding ? JSON.parse(JSON.stringify(chef.holding)) : null;
-        chef.x = clickedFloor.x;
-        chef.y = clickedFloor.y;
-        resolveChefCollisions();
-        pushTrailPoint(chef.id, chef.x, chef.y);
-        chef.holding = JSON.parse(JSON.stringify(clickedFloor.payload));
-        state.floorItems = state.floorItems.filter(item => item.id !== clickedFloor.id);
-        if (previousHolding) {
-          state.floorItems.push({
-            id: Date.now() + Math.random(),
-            x: clickedFloor.x + 14,
-            y: clickedFloor.y + 10,
-            payload: previousHolding
-          });
+        const dFloor = Math.hypot(chef.x - clickedFloor.x, chef.y - clickedFloor.y);
+        if (dFloor <= chef.radius + 26) {
+          const previousHolding = chef.holding ? JSON.parse(JSON.stringify(chef.holding)) : null;
+          chef.holding = JSON.parse(JSON.stringify(clickedFloor.payload));
+          state.floorItems = state.floorItems.filter(item => item.id !== clickedFloor.id);
+          if (previousHolding) {
+            state.floorItems.push({
+              id: Date.now() + Math.random(),
+              x: chef.x + Math.cos(chef.angle) * 24,
+              y: chef.y + Math.sin(chef.angle) * 24,
+              payload: previousHolding
+            });
+          }
+          const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : (chef.holding.kind === 'fries' ? '金黃炸薯條' : (chef.holding.kind === 'cola' ? '冰涼可樂' : '漢堡'));
+          spawnBurstParticles(clickedFloor.x, clickedFloor.y, '#38BDF8', 6);
+          playSfx('pickup');
+          showToast(`${chef.tag} 撿起「${name}」`);
+          updateHoldingHud();
+          sendWorldStateToGuests();
+        } else {
+          showToast('請先走近地上的物品再點擊撿取！');
         }
-        const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : (chef.holding.kind === 'fries' ? '金黃炸薯條' : (chef.holding.kind === 'cola' ? '冰涼可樂' : '漢堡'));
-        spawnBurstParticles(clickedFloor.x, clickedFloor.y, '#38BDF8', 6);
-        showToast(`${chef.tag} 從地上撿起「${name}」`);
-        updateHoldingHud();
-        sendWorldStateToGuests();
         return;
       }
 
@@ -2271,43 +2280,35 @@
       );
 
       if (clickedStation) {
-        const dEdge = distToRectEdge(chef.x, chef.y, clickedStation);
-        if (dEdge <= 78) {
+        if (isChefInStationReach(chef, clickedStation)) {
           interactWithStationForChef(chef, clickedStation);
         } else {
-          const cx = clickedStation.x + clickedStation.w / 2;
-          const cy = clickedStation.y + clickedStation.h / 2;
-          const ang = Math.atan2(chef.y - cy, chef.x - cx);
-          const standX = Math.max(clickedStation.x - chef.radius - 8, Math.min(clickedStation.x + clickedStation.w + chef.radius + 8, cx + Math.cos(ang) * (clickedStation.w / 2 + chef.radius + 10)));
-          const standY = Math.max(clickedStation.y - chef.radius - 8, Math.min(clickedStation.y + clickedStation.h + chef.radius + 8, cy + Math.sin(ang) * (clickedStation.h / 2 + chef.radius + 10)));
-          chef.x = standX;
-          chef.y = standY;
-          resolveChefCollisions();
-          pushTrailPoint(chef.id, chef.x, chef.y);
-          interactWithStationForChef(chef, clickedStation);
+          showToast(`請先走到「${clickedStation.label}」旁邊再點擊操作！`);
         }
         return;
       }
 
       if (chef.holding) {
-        dropHoldingToFloorAtForChef(chef, clickX, clickY);
+        const dDrop = Math.hypot(clickX - chef.x, clickY - chef.y);
+        if (dDrop <= chef.radius + 54) {
+          dropHoldingToFloorAtForChef(chef, clickX, clickY);
+        } else {
+          showToast('只能丟在主廚身邊附近，請靠近後再點擊！');
+        }
         sendWorldStateToGuests();
         return;
       }
 
-      chef.x = clickX;
-      chef.y = clickY;
-      resolveChefCollisions();
-      pushTrailPoint(chef.id, chef.x, chef.y);
-      const nearFloor = findNearbyFloorItem(chef.x, chef.y, 44);
+      const nearFloor = findNearbyFloorItem(chef.x, chef.y, chef.radius + 24);
       if (nearFloor && !chef.holding) {
         chef.holding = JSON.parse(JSON.stringify(nearFloor.payload));
         state.floorItems = state.floorItems.filter(item => item.id !== nearFloor.id);
         const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : (chef.holding.kind === 'fries' ? '金黃炸薯條' : (chef.holding.kind === 'cola' ? '冰涼可樂' : '漢堡'));
-        showToast(`${chef.tag} 撿起地上的「${name}」`);
+        playSfx('pickup');
+        showToast(`${chef.tag} 撿起「${name}」`);
+        updateHoldingHud();
+        sendWorldStateToGuests();
       }
-      updateHoldingHud();
-      sendWorldStateToGuests();
     }
 
     function handleCanvasClick(e) {
@@ -2322,16 +2323,6 @@
 
       if (state.mode === 'online' && state.mySlotId !== 'p1') {
         myChef.angle = Math.atan2(clickY - myChef.y, clickX - myChef.x);
-        const clickedFloor = state.floorItems.find(fi => Math.hypot(clickX - fi.x, clickY - fi.y) <= 32);
-        const clickedStation = state.stations.find(st =>
-          clickX >= st.x && clickX <= st.x + st.w && clickY >= st.y && clickY <= st.y + st.h
-        );
-        if (!clickedFloor && !clickedStation && !myChef.holding) {
-          myChef.x = clickX;
-          myChef.y = clickY;
-          resolveChefCollisions();
-          pushTrailPoint(state.mySlotId, myChef.x, myChef.y);
-        }
         sendWs({
           type: 'player_action',
           slotId: state.mySlotId,
@@ -3153,7 +3144,6 @@
       bgmStep: 0
     };
 
-    // 輕快 16 步循環旋律（C大調 -> F大調 -> G大調 -> C大調，柔和不緊繃）
     const BGM_BASS_NOTES = [
       130.81, 0, 196.00, 0,
       174.61, 0, 220.00, 0,
@@ -3231,7 +3221,6 @@
         const now = audioState.ctx.currentTime;
         const idx = audioState.bgmStep % BGM_LEAD_NOTES.length;
 
-        // 柔和輕快的低音點綴（每兩拍一次，降低緊迫感）
         const bassFreq = BGM_BASS_NOTES[idx];
         if (bassFreq > 0) {
           const bassOsc = audioState.ctx.createOscillator();
@@ -3247,7 +3236,6 @@
           bassOsc.stop(now + 0.36);
         }
 
-        // 16 步變化旋律，聽感明亮輕快不單調
         const leadFreq = BGM_LEAD_NOTES[idx];
         if (leadFreq > 0) {
           const leadOsc = audioState.ctx.createOscillator();
