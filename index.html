@@ -2669,7 +2669,11 @@
       if (c.holding) {
         if (c.holding.kind === 'single') {
           drawItemMini(ctx, c.holding.item, 0, -36, 1.0);
-        } else {
+        } else if (c.holding.kind === 'fries') {
+          drawItemMini(ctx, 'fries', 0, -36, 1.05);
+        } else if (c.holding.kind === 'cola') {
+          drawItemMini(ctx, 'cola', 0, -36, 1.05);
+        } else if (Array.isArray(c.holding.items)) {
           c.holding.items.forEach((k, i) => {
             drawItemMini(ctx, k, 0, -32 - i * 5.5, 0.88);
           });
@@ -2997,9 +3001,9 @@
       openModal(`
         <h3 style="margin-top:0;">Crazy COOK V2.9 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
-          <li><strong>120 秒挑戰：</strong>單局時間設定為 120 秒（<code>2:00</code>），方便多人分工製作漢堡、炸薯條、可樂與套餐。</li>
-          <li><strong>炸薯條與冰涼可樂：</strong>從「冷凍櫃」拿薯條到「油炸機」炸 2 下完成；或點擊「飲料機」等裝填完成後端可樂，再送去「送餐輸送帶」出餐。</li>
-          <li><strong>單點與套餐組合：</strong>訂單會以圖示顯示單點或套餐組合，依序把對應餐點送到輸送帶即可完成。</li>
+          <li><strong>自選 2～4 人房間：</strong>在多人連線大廳選擇「2 人房 / 3 人房 / 4 人房」後建立房號，滿員且全員按「準備」後由房主按「開始營業！」。</li>
+          <li><strong>圖示化製作流程：</strong>上方訂單卡已改用與下方食材相同的圖示呈現堆疊順序，依序把對應食材疊上組裝台並送到輸送帶出餐。</li>
+          <li><strong>Render WebSocket 同步：</strong>透過 WebSocket 房間中繼同步 2～4 人準備狀態、即時走位與軌跡，結算時全體同步顯示成績單。</li>
         </ol>
         <div style="text-align:right;margin-top:14px;">
           <button class="btn btn-mint" onclick="closeModal()">知道了</button>
