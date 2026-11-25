@@ -2566,6 +2566,7 @@
       }
     }
 
+    // 需先走近台子／地上物品的可互動範圍（碰撞箱＋操作半徑）後，點擊才可互動，不再直接瞬移過去拿
     function isChefInStationReach(chef, st) {
       if (!chef || !st) return false;
       return distToRectEdge(chef.x, chef.y, st) <= (chef.radius + 18);
@@ -2966,6 +2967,84 @@
         ctx.stroke();
         ctx.fillStyle = key === 'cola' ? '#EF4444' : '#A1A1AA';
         ctx.fillRect(-9, -9.5, 18, 3);
+      } else if (key === 'hotdog_bun') {
+        ctx.fillStyle = '#FBBF24';
+        drawRoundRect(ctx, -11, -6, 22, 12, 6);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = '#D97706';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-8, 0);
+        ctx.lineTo(8, 0);
+        ctx.stroke();
+      } else if (key === 'raw_hotdog') {
+        ctx.fillStyle = '#FB7185';
+        drawRoundRect(ctx, -11, -4.5, 22, 9, 4.5);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = '#FFE4E6';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-7, 0);
+        ctx.lineTo(7, 0);
+        ctx.stroke();
+      } else if (key === 'watermelon') {
+        ctx.fillStyle = '#FB7185';
+        ctx.beginPath();
+        ctx.moveTo(-8, -8);
+        ctx.lineTo(8, -8);
+        ctx.lineTo(6.5, 9);
+        ctx.lineTo(-6.5, 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#22C55E';
+        ctx.fillRect(-9, -9.5, 18, 3);
+      } else if (key === 'shaved_ice') {
+        ctx.fillStyle = '#E0F2FE';
+        ctx.beginPath();
+        ctx.arc(0, -1, 8.5, Math.PI, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#38BDF8';
+        ctx.beginPath();
+        ctx.moveTo(-8, -1);
+        ctx.lineTo(8, -1);
+        ctx.lineTo(6, 9);
+        ctx.lineTo(-6, 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (key === 'hotdog') {
+        ctx.fillStyle = '#FBBF24';
+        drawRoundRect(ctx, -11, -5, 22, 10, 5);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = '#EF4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-8, 0);
+        ctx.lineTo(8, 0);
+        ctx.stroke();
+      } else if (key === 'sauce_strawberry' || key === 'sauce_melon' || key === 'sauce_soda' || key === 'sauce_ketchup' || key === 'sauce_mustard') {
+        const sauceFillMap = {
+          sauce_strawberry: '#F472B6',
+          sauce_melon: '#86EFAC',
+          sauce_soda: '#7DD3FC',
+          sauce_ketchup: '#EF4444',
+          sauce_mustard: '#FACC15'
+        };
+        ctx.fillStyle = sauceFillMap[key] || '#FACC15';
+        ctx.beginPath();
+        ctx.arc(0, 1.5, 8.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#FFFFFF';
+        drawRoundRect(ctx, -3, -9.5, 6, 4.5, 1.5);
+        ctx.fill();
+        ctx.stroke();
       }
 
       ctx.restore();
@@ -3280,7 +3359,7 @@
         } else if (st.type === 'grill') {
           if (!st.meatStatus) {
             ctx.fillStyle = '#6B7280';
-            ctx.fillText('放生肉排', st.x + st.w / 2, st.y + 55);
+            ctx.fillText('放生熱狗', st.x + st.w / 2, st.y + 55);
           } else if (st.meatStatus === 'raw_meat') {
             drawItemMini(ctx, 'raw_meat', st.x + st.w / 2, st.y + 42, 1.08);
             ctx.fillStyle = '#B45309';
@@ -3339,14 +3418,14 @@
         } else if (st.type === 'freezer') {
           drawItemMini(ctx, 'frozen_fries', st.x + st.w / 2, st.y + 42, 1.05);
           ctx.fillStyle = '#2563EB';
-          ctx.fillText('拿冷凍薯條', st.x + st.w / 2, st.y + 70);
+          ctx.fillText('拿冰塊', st.x + st.w / 2, st.y + 70);
         } else if (st.type === 'fryer') {
           if (!st.item) {
             ctx.fillStyle = '#6B7280';
-            ctx.fillText('放冷凍薯條炸', st.x + st.w / 2, st.y + 58);
+            ctx.fillText('放冰塊刨冰', st.x + st.w / 2, st.y + 58);
           } else if (st.item === 'frozen_fries') {
             drawItemMini(ctx, 'frozen_fries', st.x + st.w / 2, st.y + 45, 1.05);
-            ctx.fillText(`油炸 ${st.friesProgress}/2`, st.x + st.w / 2, st.y + 78);
+            ctx.fillText(`刨冰 ${st.friesProgress}/2`, st.x + st.w / 2, st.y + 78);
           } else {
             drawItemMini(ctx, 'fries', st.x + st.w / 2, st.y + 45, 1.08);
             ctx.fillStyle = '#15803D';
@@ -3355,7 +3434,7 @@
         } else if (st.type === 'dispenser') {
           if (!st.drinkStatus) {
             ctx.fillStyle = '#2563EB';
-            ctx.fillText('點擊裝可樂', st.x + st.w / 2, st.y + 54);
+            ctx.fillText('點擊裝西瓜汁', st.x + st.w / 2, st.y + 54);
           } else if (st.drinkStatus === 'filling') {
             drawItemMini(ctx, 'cola', st.x + st.w / 2, st.y + 40, 0.98);
             ctx.fillStyle = '#B45309';
