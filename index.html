@@ -1062,6 +1062,7 @@
       bun: '漢堡麵包',
       hotdog_bun: '熱狗麵包',
       raw_hotdog: '生熱狗',
+      cooked_hotdog: '烤熟熱狗',
       raw_meat: '生肉排',
       patty: '煎熟肉排',
       burnt_meat: '焦黑廢肉',
@@ -1124,6 +1125,9 @@
           <rect x="3" y="8" width="22" height="12" rx="6" fill="#FBBF24" stroke="#1A1A1A" stroke-width="2.2"/>
           <line x1="6" y1="14" x2="22" y2="14" stroke="#D97706" stroke-width="2.2" stroke-linecap="round"/>
         </svg>`;
+      }
+      if (key === 'cooked_hotdog') {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none"><rect x="4" y="10" width="20" height="8" rx="4" fill="#B45309" stroke="#1A1A1A" stroke-width="2.2"/><line x1="7" y1="14" x2="21" y2="14" stroke="#FACC15" stroke-width="1.8" stroke-linecap="round"/></svg>`;
       }
       if (key === 'raw_hotdog') {
         return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
@@ -2298,13 +2302,14 @@
         }
       } else if (st.type === 'grill') {
         if (!st.meatStatus && chef.holding && chef.holding.kind === 'single' && (chef.holding.item === 'raw_meat' || chef.holding.item === 'raw_hotdog')) {
-          st.meatStatus = 'raw_meat';
+          st.meatStatus = chef.holding.item;
+          const putLabel = ITEM_LABELS[st.meatStatus];
           st.cookProgress = 0;
           st.overcookSec = 0;
           chef.holding = null;
           spawnBurstParticles(scx, scy, '#FB7185', 6);
-          playSfx('grill'); showToast(`${chef.tag} 將生肉排放上 ${st.label}`);
-        } else if (st.meatStatus === 'patty' || st.meatStatus === 'burnt_meat') {
+          playSfx('grill'); showToast(`${chef.tag} 將${putLabel}放上 ${st.label}`);
+        } else if (st.meatStatus === 'patty' || st.meatStatus === 'cooked_hotdog' || st.meatStatus === 'burnt_meat') {
           if (!chef.holding) {
             chef.holding = { kind: 'single', item: st.meatStatus };
             const picked = ITEM_LABELS[st.meatStatus];
@@ -2365,7 +2370,9 @@
           showToast('焦黑廢肉不能疊進漢堡，請丟垃圾桶');
         }
       } else if (st.type === 'counter') {
-        if (!st.item && chef.holding && chef.holding.kind === 'single') {
+        if (!st.item && chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'hotdog_bun') {
+          showToast('熱狗麵包不能放在一般檯面上，請放上「熱狗堡組裝台 A」！');
+        } else if (!st.item && chef.holding && chef.holding.kind === 'single') {
           st.item = chef.holding.item;
           const putName = ITEM_LABELS[st.item];
           chef.holding = null;
@@ -2442,17 +2449,21 @@
           } else {
             showToast('組裝台已有熱狗麵包');
           }
-        } else if (chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'patty') {
-          if (!st.hasDog) {
+        } else if (chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'cooked_hotdog') {
+          if (!st.hasBun) {
+            showToast('請先放上「熱狗麵包」，再放烤熟熱狗！');
+          } else if (!st.hasDog) {
             st.hasDog = true;
             st.sauces = st.sauces || [];
             chef.holding = null;
-            playSfx('stack'); showToast(`${chef.tag} 放上烤熟熱狗，可擠番茄醬或芥末醬`);
+            playSfx('stack'); showToast(`${chef.tag} 放上烤熟熱狗！現在可以擠番茄醬或芥末醬`);
           } else {
-            showToast('組裝台已有熱狗');
+            showToast('組裝台已有烤熟熱狗');
           }
+        } else if (chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'raw_hotdog') {
+          showToast('生熱狗不能直接組裝或擠醬，請先到烤熱狗台烤熟！');
         } else if (chef.holding && chef.holding.kind === 'single' && (chef.holding.item === 'sauce_ketchup' || chef.holding.item === 'sauce_mustard')) {
-          if (st.hasDog || st.hasBun) {
+          if (st.hasBun && st.hasDog) {
             st.sauces = st.sauces || [];
             if (!st.sauces.includes(chef.holding.item)) {
               st.sauces.push(chef.holding.item);
@@ -2464,14 +2475,16 @@
               showToast('已擠過相同醬料');
             }
           } else {
-            showToast('請先放上熱狗麵包與烤熟熱狗再擠醬');
+            showToast('必須先放「熱狗麵包」與「烤熟熱狗」完成後才能擠醬！');
           }
-        } else if (!chef.holding && (st.hasDog || st.hasBun)) {
-          chef.holding = { kind: 'hotdog', hasBun: Boolean(st.hasBun), sauces: [...(st.sauces || [])] };
+        } else if (!chef.holding && st.hasBun && st.hasDog) {
+          chef.holding = { kind: 'hotdog', hasBun: true, sauces: [...(st.sauces || [])] };
           st.hasBun = false;
           st.hasDog = false;
           st.sauces = [];
           playSfx('pickup'); showToast(`${chef.tag} 端起熱狗堡！`);
+        } else if (!chef.holding && (st.hasBun || st.hasDog)) {
+          showToast('熱狗麵包與烤熟熱狗尚未組裝完成');
         }
       } else if (st.type === 'ice_bench') {
         if (chef.holding && chef.holding.kind === 'fries') {
@@ -2744,80 +2757,76 @@
       lastFrameTime = now;
 
       if (!state.paused && !document.getElementById('screenGame').classList.contains('hidden')) {
-        try {
-          const myChef = getMyChef();
-          let vx = 0;
-          let vy = 0;
-          if (state.keys['w'] || state.keys['arrowup'] || state.touchDir.up) vy -= 1;
-          if (state.keys['s'] || state.keys['arrowdown'] || state.touchDir.down) vy += 1;
-          if (state.keys['a'] || state.keys['arrowleft'] || state.touchDir.left) vx -= 1;
-          if (state.keys['d'] || state.keys['arrowright'] || state.touchDir.right) vx += 1;
-          moveSingleChef(myChef, vx, vy, dt);
+        const myChef = getMyChef();
+        let vx = 0;
+        let vy = 0;
+        if (state.keys['w'] || state.keys['arrowup'] || state.touchDir.up) vy -= 1;
+        if (state.keys['s'] || state.keys['arrowdown'] || state.touchDir.down) vy += 1;
+        if (state.keys['a'] || state.keys['arrowleft'] || state.touchDir.left) vx -= 1;
+        if (state.keys['d'] || state.keys['arrowright'] || state.touchDir.right) vx += 1;
+        moveSingleChef(myChef, vx, vy, dt);
 
-          resolveChefCollisions();
+        resolveChefCollisions();
 
-          if (myChef && (vx !== 0 || vy !== 0)) {
-            pushTrailPoint(myChef.id, myChef.x, myChef.y);
-          }
+        if (myChef && (vx !== 0 || vy !== 0)) {
+          pushTrailPoint(myChef.id, myChef.x, myChef.y);
+        }
 
-          ['p1', 'p2', 'p3', 'p4'].forEach(key => {
-            if (!state.trails[key]) return;
-            state.trails[key].forEach(pt => { pt.life -= dt * 0.9; });
-            state.trails[key] = state.trails[key].filter(pt => pt.life > 0);
-          });
+        ['p1', 'p2', 'p3', 'p4'].forEach(key => {
+          if (!state.trails[key]) return;
+          state.trails[key].forEach(pt => { pt.life -= dt * 0.9; });
+          state.trails[key] = state.trails[key].filter(pt => pt.life > 0);
+        });
 
-          if (state.mySlotId === 'p1') {
-            for (const st of state.stations) {
-              if (st.type === 'grill' && st.meatStatus && st.meatStatus !== 'burnt_meat') {
-                if (st.meatStatus === 'raw_meat') {
-                  st.cookProgress = Math.min(100, st.cookProgress + dt * 25);
-                  if (st.cookProgress >= 100) {
-                    st.meatStatus = 'patty';
-                    st.overcookSec = 0;
-                  }
-                } else if (st.meatStatus === 'patty') {
-                  st.overcookSec += dt;
-                  if (st.overcookSec >= 10) {
-                    st.meatStatus = 'burnt_meat';
-                  }
+        if (state.mySlotId === 'p1') {
+          for (const st of state.stations) {
+            if (st.type === 'grill' && st.meatStatus && st.meatStatus !== 'burnt_meat') {
+              if (st.meatStatus === 'raw_meat' || st.meatStatus === 'raw_hotdog') {
+                st.cookProgress = Math.min(100, st.cookProgress + dt * 25);
+                if (st.cookProgress >= 100) {
+                  st.meatStatus = st.meatStatus === 'raw_hotdog' ? 'cooked_hotdog' : 'patty';
+                  st.overcookSec = 0;
                 }
-              } else if (st.type === 'dispenser' && st.drinkStatus && st.drinkStatus !== 'burnt_cola') {
-                if (st.drinkStatus === 'filling') {
-                  st.fillProgress = Math.min(100, st.fillProgress + dt * 45);
-                  if (st.fillProgress >= 100) {
-                    st.drinkStatus = 'ready';
-                    st.overfillSec = 0;
-                  }
-                } else if (st.drinkStatus === 'ready') {
-                  st.overfillSec += dt;
-                  if (st.overfillSec >= 12) {
-                    st.drinkStatus = 'burnt_cola';
-                  }
+              } else if (st.meatStatus === 'patty' || st.meatStatus === 'cooked_hotdog') {
+                st.overcookSec += dt;
+                if (st.overcookSec >= 10) {
+                  st.meatStatus = 'burnt_meat';
+                }
+              }
+            } else if (st.type === 'dispenser' && st.drinkStatus && st.drinkStatus !== 'burnt_cola') {
+              if (st.drinkStatus === 'filling') {
+                st.fillProgress = Math.min(100, st.fillProgress + dt * 45);
+                if (st.fillProgress >= 100) {
+                  st.drinkStatus = 'ready';
+                  st.overfillSec = 0;
+                }
+              } else if (st.drinkStatus === 'ready') {
+                st.overfillSec += dt;
+                if (st.overfillSec >= 12) {
+                  st.drinkStatus = 'burnt_cola';
                 }
               }
             }
           }
-
-          state.particles = state.particles.filter(pt => {
-            pt.x += pt.vx * dt;
-            pt.y += pt.vy * dt;
-            pt.vy += 120 * dt;
-            pt.life -= dt;
-            return pt.life > 0;
-          });
-
-          if (state.beltFlashTimer > 0) {
-            state.beltFlashTimer = Math.max(0, state.beltFlashTimer - dt);
-          }
-          if (state.toastTimer > 0) {
-            state.toastTimer = Math.max(0, state.toastTimer - dt);
-            if (state.toastTimer === 0) updateHoldingHud();
-          }
-
-          drawKitchenCanvas(now / 1000);
-        } catch (err) {
-          console.error('gameLoop error:', err);
         }
+
+        state.particles = state.particles.filter(pt => {
+          pt.x += pt.vx * dt;
+          pt.y += pt.vy * dt;
+          pt.vy += 120 * dt;
+          pt.life -= dt;
+          return pt.life > 0;
+        });
+
+        if (state.beltFlashTimer > 0) {
+          state.beltFlashTimer = Math.max(0, state.beltFlashTimer - dt);
+        }
+        if (state.toastTimer > 0) {
+          state.toastTimer = Math.max(0, state.toastTimer - dt);
+          if (state.toastTimer === 0) updateHoldingHud();
+        }
+
+        drawKitchenCanvas(now / 1000);
       }
 
       rafId = requestAnimationFrame(gameLoop);
@@ -2977,6 +2986,17 @@
         ctx.beginPath();
         ctx.moveTo(-8, 0);
         ctx.lineTo(8, 0);
+        ctx.stroke();
+      } else if (key === 'cooked_hotdog') {
+        ctx.fillStyle = '#B45309';
+        drawRoundRect(ctx, -11, -4.5, 22, 9, 4.5);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = '#FACC15';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(-7, 0);
+        ctx.lineTo(7, 0);
         ctx.stroke();
       } else if (key === 'raw_hotdog') {
         ctx.fillStyle = '#FB7185';
@@ -3258,6 +3278,12 @@
           drawItemMini(ctx, 'fries', fi.x, fi.y - 2, 1.08);
         } else if (fi.payload.kind === 'cola') {
           drawItemMini(ctx, 'cola', fi.x, fi.y - 2, 1.08);
+        } else if (fi.payload.kind === 'watermelon') {
+          drawItemMini(ctx, 'watermelon', fi.x, fi.y - 2, 1.08);
+        } else if (fi.payload.kind === 'shaved_ice') {
+          drawItemMini(ctx, 'shaved_ice', fi.x, fi.y - 2, 1.08);
+        } else if (fi.payload.kind === 'hotdog') {
+          drawItemMini(ctx, 'hotdog', fi.x, fi.y - 2, 1.08);
         } else if (Array.isArray(fi.payload.items)) {
           fi.payload.items.forEach((k, idx) => {
             drawItemMini(ctx, k, fi.x, fi.y - idx * 4.5, 0.96);
@@ -3267,7 +3293,7 @@
         ctx.font = 'bold 11px sans-serif';
         ctx.fillStyle = '#1A1A1A';
         ctx.textAlign = 'center';
-        const lbl = fi.payload.kind === 'single' ? ITEM_LABELS[fi.payload.item] : (fi.payload.kind === 'fries' ? '炸薯條' : (fi.payload.kind === 'cola' ? '冰涼可樂' : `漢堡(${fi.payload.items.length}層)`));
+        const lbl = fi.payload.kind === 'single' ? ITEM_LABELS[fi.payload.item] : (fi.payload.kind === 'fries' ? '炸薯條' : (fi.payload.kind === 'cola' ? '冰涼可樂' : (fi.payload.kind === 'watermelon' ? '冰涼西瓜汁' : (fi.payload.kind === 'shaved_ice' ? '夏日刨冰' : (fi.payload.kind === 'hotdog' ? '海灘熱狗堡' : `漢堡(${fi.payload.items.length}層)`)))));
         ctx.fillText(lbl, fi.x, fi.y + 23);
         ctx.restore();
       }
@@ -3337,12 +3363,16 @@
         } else if (st.type === 'sauce_crate') {
           drawItemMini(ctx, st.sauce, st.x + st.w / 2, st.y + 44, 1.15);
         } else if (st.type === 'hotdog_bench') {
-          if (!st.hasDog) {
+          if (!st.hasBun && !st.hasDog) {
             ctx.fillStyle = '#6B7280';
-            ctx.fillText('放麵包+熱狗擠醬', st.x + st.w / 2, st.y + 56);
+            ctx.fillText('先放麵包再放熟熱狗', st.x + st.w / 2, st.y + 56);
+          } else if (st.hasBun && !st.hasDog) {
+            drawItemMini(ctx, 'hotdog_bun', st.x + st.w / 2, st.y + 44, 1.08);
+            ctx.fillStyle = '#B45309';
+            ctx.fillText('請放烤熟熱狗', st.x + st.w / 2, st.y + 78);
           } else {
             drawItemMini(ctx, 'hotdog', st.x + st.w / 2, st.y + 44, 1.12);
-            const sTxt = (st.sauces || []).map(k => (k === 'sauce_ketchup' ? '番茄' : '芥末')).join('+') || '無醬';
+            const sTxt = (st.sauces || []).map(k => (k === 'sauce_ketchup' ? '番茄' : '芥末')).join('+') || '可擠醬';
             ctx.fillStyle = '#1A1A1A';
             ctx.fillText(sTxt, st.x + st.w / 2, st.y + 78);
           }
@@ -3360,16 +3390,16 @@
           if (!st.meatStatus) {
             ctx.fillStyle = '#6B7280';
             ctx.fillText('放生熱狗', st.x + st.w / 2, st.y + 55);
-          } else if (st.meatStatus === 'raw_meat') {
-            drawItemMini(ctx, 'raw_meat', st.x + st.w / 2, st.y + 42, 1.08);
+          } else if (st.meatStatus === 'raw_meat' || st.meatStatus === 'raw_hotdog') {
+            drawItemMini(ctx, st.meatStatus, st.x + st.w / 2, st.y + 42, 1.08);
             ctx.fillStyle = '#B45309';
             ctx.fillText(`煎製 ${Math.floor(st.cookProgress)}%`, st.x + st.w / 2, st.y + 67);
             ctx.fillStyle = '#E5E7EB';
             ctx.fillRect(st.x + 14, st.y + 74, st.w - 28, 7);
             ctx.fillStyle = '#F59E0B';
             ctx.fillRect(st.x + 14, st.y + 74, ((st.w - 28) * st.cookProgress) / 100, 7);
-          } else if (st.meatStatus === 'patty') {
-            drawItemMini(ctx, 'patty', st.x + st.w / 2, st.y + 42, 1.08);
+          } else if (st.meatStatus === 'patty' || st.meatStatus === 'cooked_hotdog') {
+            drawItemMini(ctx, st.meatStatus, st.x + st.w / 2, st.y + 42, 1.08);
             const left = Math.max(0, 10 - st.overcookSec).toFixed(1);
             const pct = Math.max(0, (10 - st.overcookSec) / 10);
             ctx.fillStyle = st.overcookSec >= 6.5 ? '#DC2626' : '#15803D';
@@ -3592,6 +3622,8 @@
 
     document.getElementById('kitchenCanvas').addEventListener('click', handleCanvasClick);
 
+
+    // === 內建 Web Audio 雙聲道音效引擎（背景音樂 BGM ＋ 互動音效 SFX） ===
     const audioState = {
       ctx: null,
       bgmGain: null,
@@ -3604,6 +3636,7 @@
       bgmStep: 0
     };
 
+    // 輕快 16 步循環旋律（C大調 -> F大調 -> G大調 -> C大調，柔和不緊繃）
     const BGM_BASS_NOTES = [
       130.81, 0, 196.00, 0,
       174.61, 0, 220.00, 0,
@@ -3681,6 +3714,7 @@
         const now = audioState.ctx.currentTime;
         const idx = audioState.bgmStep % BGM_LEAD_NOTES.length;
 
+        // 柔和輕快的低音點綴（每兩拍一次，降低緊迫感）
         const bassFreq = BGM_BASS_NOTES[idx];
         if (bassFreq > 0) {
           const bassOsc = audioState.ctx.createOscillator();
@@ -3696,6 +3730,7 @@
           bassOsc.stop(now + 0.36);
         }
 
+        // 16 步變化旋律，聽感明亮輕快不單調
         const leadFreq = BGM_LEAD_NOTES[idx];
         if (leadFreq > 0) {
           const leadOsc = audioState.ctx.createOscillator();
