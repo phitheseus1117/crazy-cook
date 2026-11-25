@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crazy COOK — 美式復古快餐廚房 V2.9（120 分鐘馬拉松 × 炸薯條與可樂套餐）</title>
+  <title>Crazy COOK — 美式復古快餐廚房 V2.9（120 秒挑戰 × 炸薯條與可樂套餐）</title>
   <style>
     :root {
       --bg-cream: #FFF8E7;
@@ -754,7 +754,7 @@
       <div class="hud-bar">
         <div class="hud-box">
           <div class="hud-label">剩餘時間</div>
-          <div class="hud-val" id="hudTime">120:00</div>
+          <div class="hud-val" id="hudTime">2:00</div>
         </div>
         <div class="hud-box">
           <div class="hud-label">營業額</div>
@@ -829,7 +829,7 @@
       roomCode: null,
       connected: false,
       players: [],
-      timeLeft: 7200,
+      timeLeft: 120,
       score: 0,
       bestScore: Number(localStorage.getItem('crazyCookBestScore') || 0),
       combo: 1,
@@ -1655,7 +1655,7 @@
     }
 
     function startGuestGameFromHost(snap) {
-      state.timeLeft = snap.timeLeft || 7200;
+      state.timeLeft = snap.timeLeft || 120;
       state.score = 0;
       state.combo = 1;
       state.maxCombo = 1;
@@ -1695,7 +1695,7 @@
     }
 
     function beginCountdown() {
-      state.timeLeft = 7200;
+      state.timeLeft = 120;
       state.score = 0;
       state.combo = 1;
       state.maxCombo = 1;
@@ -2997,7 +2997,7 @@
       openModal(`
         <h3 style="margin-top:0;">Crazy COOK V2.9 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
-          <li><strong>120 分鐘馬拉松：</strong>單局時間延長至 120 分鐘（<code>120:00</code>），方便多人分工製作漢堡、炸薯條、可樂與套餐。</li>
+          <li><strong>120 秒挑戰：</strong>單局時間設定為 120 秒（<code>2:00</code>），方便多人分工製作漢堡、炸薯條、可樂與套餐。</li>
           <li><strong>炸薯條與冰涼可樂：</strong>從「冷凍櫃」拿薯條到「油炸機」炸 2 下完成；或點擊「飲料機」等裝填完成後端可樂，再送去「送餐輸送帶」出餐。</li>
           <li><strong>單點與套餐組合：</strong>訂單會以圖示顯示單點或套餐組合，依序把對應餐點送到輸送帶即可完成。</li>
         </ol>
