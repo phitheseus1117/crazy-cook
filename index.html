@@ -1466,11 +1466,13 @@
 
     function setupKitchen() {
       state.stations = [
-        { id: 'crate_bun', type: 'crate', item: 'bun', label: '麵包', x: 165, y: 20, w: 96, h: 66 },
-        { id: 'crate_meat', type: 'crate', item: 'raw_meat', label: '生肉排', x: 273, y: 20, w: 96, h: 66 },
-        { id: 'crate_lettuce', type: 'crate', item: 'raw_lettuce', label: '生菜', x: 381, y: 20, w: 96, h: 66 },
-        { id: 'crate_cheese', type: 'crate', item: 'cheese', label: '起司', x: 489, y: 20, w: 96, h: 66 },
-        { id: 'crate_tomato', type: 'crate', item: 'tomato', label: '番茄', x: 597, y: 20, w: 96, h: 66 },
+        { id: 'crate_bun', type: 'crate', item: 'bun', label: '麵包', x: 148, y: 20, w: 84, h: 66 },
+        { id: 'crate_meat', type: 'crate', item: 'raw_meat', label: '生肉排', x: 240, y: 20, w: 84, h: 66 },
+        { id: 'crate_bacon', type: 'crate', item: 'raw_bacon', label: '生培根', x: 332, y: 20, w: 84, h: 66 },
+        { id: 'crate_lettuce', type: 'crate', item: 'raw_lettuce', label: '生菜', x: 424, y: 20, w: 84, h: 66 },
+        { id: 'crate_onion', type: 'crate', item: 'raw_onion', label: '洋蔥', x: 516, y: 20, w: 84, h: 66 },
+        { id: 'crate_cheese', type: 'crate', item: 'cheese', label: '起司', x: 608, y: 20, w: 84, h: 66 },
+        { id: 'crate_tomato', type: 'crate', item: 'tomato', label: '番茄', x: 700, y: 20, w: 84, h: 66 },
 
         { id: 'grill_1', type: 'grill', label: '煎台 #1', x: 24, y: 112, w: 114, h: 84, meatStatus: null, cookProgress: 0, overcookSec: 0 },
         { id: 'grill_2', type: 'grill', label: '煎台 #2', x: 24, y: 204, w: 114, h: 84, meatStatus: null, cookProgress: 0, overcookSec: 0 },
@@ -2685,7 +2687,9 @@
 
     function drawKitchenCanvas(t) {
       const canvas = document.getElementById('kitchenCanvas');
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
+      ctx.save();
       ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
       ctx.fillStyle = '#F4E8D1';
@@ -2731,7 +2735,11 @@
 
         if (fi.payload.kind === 'single') {
           drawItemMini(ctx, fi.payload.item, fi.x, fi.y - 2, 1.08);
-        } else {
+        } else if (fi.payload.kind === 'fries') {
+          drawItemMini(ctx, 'fries', fi.x, fi.y - 2, 1.08);
+        } else if (fi.payload.kind === 'cola') {
+          drawItemMini(ctx, 'cola', fi.x, fi.y - 2, 1.08);
+        } else if (Array.isArray(fi.payload.items)) {
           fi.payload.items.forEach((k, idx) => {
             drawItemMini(ctx, k, fi.x, fi.y - idx * 4.5, 0.96);
           });
@@ -2927,6 +2935,7 @@
       state.chefs.forEach((c, idx) => {
         drawSingleChef(ctx, c, idx);
       });
+      ctx.restore();
     }
 
     function togglePause() {
