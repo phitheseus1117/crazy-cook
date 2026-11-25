@@ -1913,8 +1913,8 @@
       state.combo = snap.combo;
       state.maxCombo = snap.maxCombo;
       state.servedCount = snap.servedCount;
-      if (Array.isArray(snap.orders)) state.orders = snap.orders;
-      if (Array.isArray(snap.stations)) state.stations = snap.stations;
+      if (Array.isArray(snap.orders) && snap.orders.length > 0) state.orders = snap.orders;
+      if (Array.isArray(snap.stations) && snap.stations.length > 0) state.stations = snap.stations;
       if (Array.isArray(snap.floorItems)) state.floorItems = snap.floorItems;
 
       if (Array.isArray(snap.chefs)) {
@@ -2016,28 +2016,32 @@
 
       gameTimerId = setInterval(() => {
         if (state.paused) return;
-        state.timeLeft -= 1;
-        if (state.timeLeft <= 0) {
-          state.timeLeft = 0;
-          requestFinishGame();
-          return;
-        }
-        const maxOrders = state.mode === 'online' ? 5 : 4;
-        if (state.timeLeft % 14 === 0 && state.orders.length < maxOrders) {
-          state.orders.push(generateOrder());
-        }
-        state.orders.forEach(o => { o.rem -= 1; });
-        state.orders = state.orders.filter(o => {
-          if (o.rem <= 0) {
-            state.combo = 1;
-            return false;
+        try {
+          state.timeLeft -= 1;
+          if (state.timeLeft <= 0) {
+            state.timeLeft = 0;
+            requestFinishGame();
+            return;
           }
-          return true;
-        });
-        if (!state.orders.length) state.orders.push(generateOrder());
-        renderHud();
-        renderOrders();
-        sendWorldStateToGuests();
+          const maxOrders = state.mode === 'online' ? 5 : 4;
+          if (state.timeLeft % 14 === 0 && state.orders.length < maxOrders) {
+            state.orders.push(generateOrder());
+          }
+          state.orders.forEach(o => { o.rem -= 1; });
+          state.orders = state.orders.filter(o => {
+            if (o.rem <= 0) {
+              state.combo = 1;
+              return false;
+            }
+            return true;
+          });
+          if (!state.orders.length) state.orders.push(generateOrder());
+          renderHud();
+          renderOrders();
+          sendWorldStateToGuests();
+        } catch (err) {
+          console.error('gameTimer error:', err);
+        }
       }, 1000);
 
       if (state.mode === 'online' && state.mySlotId === 'p1') {
@@ -2714,76 +2718,80 @@
       lastFrameTime = now;
 
       if (!state.paused && !document.getElementById('screenGame').classList.contains('hidden')) {
-        const myChef = getMyChef();
-        let vx = 0;
-        let vy = 0;
-        if (state.keys['w'] || state.keys['arrowup'] || state.touchDir.up) vy -= 1;
-        if (state.keys['s'] || state.keys['arrowdown'] || state.touchDir.down) vy += 1;
-        if (state.keys['a'] || state.keys['arrowleft'] || state.touchDir.left) vx -= 1;
-        if (state.keys['d'] || state.keys['arrowright'] || state.touchDir.right) vx += 1;
-        moveSingleChef(myChef, vx, vy, dt);
+        try {
+          const myChef = getMyChef();
+          let vx = 0;
+          let vy = 0;
+          if (state.keys['w'] || state.keys['arrowup'] || state.touchDir.up) vy -= 1;
+          if (state.keys['s'] || state.keys['arrowdown'] || state.touchDir.down) vy += 1;
+          if (state.keys['a'] || state.keys['arrowleft'] || state.touchDir.left) vx -= 1;
+          if (state.keys['d'] || state.keys['arrowright'] || state.touchDir.right) vx += 1;
+          moveSingleChef(myChef, vx, vy, dt);
 
-        resolveChefCollisions();
+          resolveChefCollisions();
 
-        if (myChef && (vx !== 0 || vy !== 0)) {
-          pushTrailPoint(myChef.id, myChef.x, myChef.y);
-        }
+          if (myChef && (vx !== 0 || vy !== 0)) {
+            pushTrailPoint(myChef.id, myChef.x, myChef.y);
+          }
 
-        ['p1', 'p2', 'p3', 'p4'].forEach(key => {
-          if (!state.trails[key]) return;
-          state.trails[key].forEach(pt => { pt.life -= dt * 0.9; });
-          state.trails[key] = state.trails[key].filter(pt => pt.life > 0);
-        });
+          ['p1', 'p2', 'p3', 'p4'].forEach(key => {
+            if (!state.trails[key]) return;
+            state.trails[key].forEach(pt => { pt.life -= dt * 0.9; });
+            state.trails[key] = state.trails[key].filter(pt => pt.life > 0);
+          });
 
-        if (state.mySlotId === 'p1') {
-          for (const st of state.stations) {
-            if (st.type === 'grill' && st.meatStatus && st.meatStatus !== 'burnt_meat') {
-              if (st.meatStatus === 'raw_meat') {
-                st.cookProgress = Math.min(100, st.cookProgress + dt * 25);
-                if (st.cookProgress >= 100) {
-                  st.meatStatus = 'patty';
-                  st.overcookSec = 0;
+          if (state.mySlotId === 'p1') {
+            for (const st of state.stations) {
+              if (st.type === 'grill' && st.meatStatus && st.meatStatus !== 'burnt_meat') {
+                if (st.meatStatus === 'raw_meat') {
+                  st.cookProgress = Math.min(100, st.cookProgress + dt * 25);
+                  if (st.cookProgress >= 100) {
+                    st.meatStatus = 'patty';
+                    st.overcookSec = 0;
+                  }
+                } else if (st.meatStatus === 'patty') {
+                  st.overcookSec += dt;
+                  if (st.overcookSec >= 10) {
+                    st.meatStatus = 'burnt_meat';
+                  }
                 }
-              } else if (st.meatStatus === 'patty') {
-                st.overcookSec += dt;
-                if (st.overcookSec >= 10) {
-                  st.meatStatus = 'burnt_meat';
-                }
-              }
-            } else if (st.type === 'dispenser' && st.drinkStatus && st.drinkStatus !== 'burnt_cola') {
-              if (st.drinkStatus === 'filling') {
-                st.fillProgress = Math.min(100, st.fillProgress + dt * 45);
-                if (st.fillProgress >= 100) {
-                  st.drinkStatus = 'ready';
-                  st.overfillSec = 0;
-                }
-              } else if (st.drinkStatus === 'ready') {
-                st.overfillSec += dt;
-                if (st.overfillSec >= 12) {
-                  st.drinkStatus = 'burnt_cola';
+              } else if (st.type === 'dispenser' && st.drinkStatus && st.drinkStatus !== 'burnt_cola') {
+                if (st.drinkStatus === 'filling') {
+                  st.fillProgress = Math.min(100, st.fillProgress + dt * 45);
+                  if (st.fillProgress >= 100) {
+                    st.drinkStatus = 'ready';
+                    st.overfillSec = 0;
+                  }
+                } else if (st.drinkStatus === 'ready') {
+                  st.overfillSec += dt;
+                  if (st.overfillSec >= 12) {
+                    st.drinkStatus = 'burnt_cola';
+                  }
                 }
               }
             }
           }
-        }
 
-        state.particles = state.particles.filter(pt => {
-          pt.x += pt.vx * dt;
-          pt.y += pt.vy * dt;
-          pt.vy += 120 * dt;
-          pt.life -= dt;
-          return pt.life > 0;
-        });
+          state.particles = state.particles.filter(pt => {
+            pt.x += pt.vx * dt;
+            pt.y += pt.vy * dt;
+            pt.vy += 120 * dt;
+            pt.life -= dt;
+            return pt.life > 0;
+          });
 
-        if (state.beltFlashTimer > 0) {
-          state.beltFlashTimer = Math.max(0, state.beltFlashTimer - dt);
-        }
-        if (state.toastTimer > 0) {
-          state.toastTimer = Math.max(0, state.toastTimer - dt);
-          if (state.toastTimer === 0) updateHoldingHud();
-        }
+          if (state.beltFlashTimer > 0) {
+            state.beltFlashTimer = Math.max(0, state.beltFlashTimer - dt);
+          }
+          if (state.toastTimer > 0) {
+            state.toastTimer = Math.max(0, state.toastTimer - dt);
+            if (state.toastTimer === 0) updateHoldingHud();
+          }
 
-        drawKitchenCanvas(now / 1000);
+          drawKitchenCanvas(now / 1000);
+        } catch (err) {
+          console.error('gameLoop error:', err);
+        }
       }
 
       rafId = requestAnimationFrame(gameLoop);
@@ -2963,8 +2971,7 @@
         ctx.stroke();
       } else if (key === 'hotdog') {
         ctx.fillStyle = '#FBBF24';
-        ctx.beginPath();
-        ctx.roundRect(-11, -5, 22, 10, 5);
+        drawRoundRect(ctx, -11, -5, 22, 10, 5);
         ctx.fill();
         ctx.stroke();
         ctx.strokeStyle = '#EF4444';
@@ -3153,8 +3160,12 @@
       const canvas = document.getElementById('kitchenCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
+      if (!ctx) return;
       ctx.save();
       ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+      if (!Array.isArray(state.stations) || state.stations.length === 0) {
+        setupKitchen();
+      }
 
       const isBeachMap = state.mapId === 'beach';
       ctx.fillStyle = isBeachMap ? '#FEF3C7' : '#F4E8D1';
