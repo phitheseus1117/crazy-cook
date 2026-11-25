@@ -3153,8 +3153,19 @@
       bgmStep: 0
     };
 
-    const BGM_BASS_NOTES = [130.81, 164.81, 196.00, 164.81, 146.83, 174.61, 220.00, 174.61];
-    const BGM_LEAD_NOTES = [523.25, 0, 659.25, 783.99, 659.25, 587.33, 523.25, 0];
+    // 輕快 16 步循環旋律（C大調 -> F大調 -> G大調 -> C大調，柔和不緊繃）
+    const BGM_BASS_NOTES = [
+      130.81, 0, 196.00, 0,
+      174.61, 0, 220.00, 0,
+      196.00, 0, 246.94, 0,
+      130.81, 0, 196.00, 0
+    ];
+    const BGM_LEAD_NOTES = [
+      523.25, 659.25, 783.99, 659.25,
+      698.46, 587.33, 659.25, 523.25,
+      587.33, 783.99, 880.00, 783.99,
+      659.25, 587.33, 523.25, 0
+    ];
 
     function ensureAudioContext() {
       if (!audioState.ctx) {
@@ -3178,7 +3189,7 @@
     }
 
     function applyAudioVolumes() {
-      const effectiveBgm = audioState.bgmMuted ? 0 : (audioState.bgmVolume / 100) * 0.22;
+      const effectiveBgm = audioState.bgmMuted ? 0 : (audioState.bgmVolume / 100) * 0.20;
       const effectiveSfx = audioState.sfxMuted ? 0 : (audioState.sfxVolume / 100) * 0.45;
       if (audioState.bgmGain && audioState.ctx) {
         audioState.bgmGain.gain.setTargetAtTime(effectiveBgm, audioState.ctx.currentTime, 0.03);
@@ -3218,37 +3229,42 @@
       audioState.bgmTimer = setInterval(() => {
         if (!audioState.ctx || audioState.ctx.state !== 'running' || state.paused) return;
         const now = audioState.ctx.currentTime;
-        const idx = audioState.bgmStep % BGM_BASS_NOTES.length;
+        const idx = audioState.bgmStep % BGM_LEAD_NOTES.length;
 
-        const bassOsc = audioState.ctx.createOscillator();
-        const bassEnv = audioState.ctx.createGain();
-        bassOsc.type = 'triangle';
-        bassOsc.frequency.setValueAtTime(BGM_BASS_NOTES[idx], now);
-        bassEnv.gain.setValueAtTime(0.001, now);
-        bassEnv.gain.linearRampToValueAtTime(0.35, now + 0.02);
-        bassEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-        bassOsc.connect(bassEnv);
-        bassEnv.connect(audioState.bgmGain);
-        bassOsc.start(now);
-        bassOsc.stop(now + 0.25);
+        // 柔和輕快的低音點綴（每兩拍一次，降低緊迫感）
+        const bassFreq = BGM_BASS_NOTES[idx];
+        if (bassFreq > 0) {
+          const bassOsc = audioState.ctx.createOscillator();
+          const bassEnv = audioState.ctx.createGain();
+          bassOsc.type = 'sine';
+          bassOsc.frequency.setValueAtTime(bassFreq, now);
+          bassEnv.gain.setValueAtTime(0.001, now);
+          bassEnv.gain.linearRampToValueAtTime(0.24, now + 0.03);
+          bassEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+          bassOsc.connect(bassEnv);
+          bassEnv.connect(audioState.bgmGain);
+          bassOsc.start(now);
+          bassOsc.stop(now + 0.36);
+        }
 
+        // 16 步變化旋律，聽感明亮輕快不單調
         const leadFreq = BGM_LEAD_NOTES[idx];
         if (leadFreq > 0) {
           const leadOsc = audioState.ctx.createOscillator();
           const leadEnv = audioState.ctx.createGain();
-          leadOsc.type = 'sine';
+          leadOsc.type = 'triangle';
           leadOsc.frequency.setValueAtTime(leadFreq, now);
           leadEnv.gain.setValueAtTime(0.001, now);
-          leadEnv.gain.linearRampToValueAtTime(0.18, now + 0.02);
-          leadEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+          leadEnv.gain.linearRampToValueAtTime(0.2, now + 0.02);
+          leadEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
           leadOsc.connect(leadEnv);
           leadEnv.connect(audioState.bgmGain);
           leadOsc.start(now);
-          leadOsc.stop(now + 0.19);
+          leadOsc.stop(now + 0.26);
         }
 
         audioState.bgmStep += 1;
-      }, 280);
+      }, 310);
     }
 
     function playSfx(type) {
