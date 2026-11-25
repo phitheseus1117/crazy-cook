@@ -2591,6 +2591,7 @@
       }
     }
 
+    // 需先走近台子／地上物品的可互動範圍（碰撞箱＋操作半徑）後，點擊才可互動，不再直接瞬移過去拿
     function isChefInStationReach(chef, st) {
       if (!chef || !st) return false;
       return distToRectEdge(chef.x, chef.y, st) <= (chef.radius + 18);
@@ -2987,6 +2988,18 @@
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
+      } else if (key === 'empty_cup') {
+        ctx.fillStyle = '#F8FAFC';
+        ctx.beginPath();
+        ctx.moveTo(-8, -8);
+        ctx.lineTo(8, -8);
+        ctx.lineTo(6.5, 9);
+        ctx.lineTo(-6.5, 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillRect(-9, -9.5, 18, 3);
       } else if (key === 'cola' || key === 'burnt_cola') {
         ctx.fillStyle = key === 'cola' ? '#451A03' : '#3F3F46';
         ctx.beginPath();
@@ -3422,17 +3435,17 @@
         } else if (st.type === 'grill') {
           if (!st.meatStatus) {
             ctx.fillStyle = '#6B7280';
-            ctx.fillText('放生熱狗', st.x + st.w / 2, st.y + 55);
-          } else if (st.meatStatus === 'raw_meat' || st.meatStatus === 'raw_hotdog') {
-            drawItemMini(ctx, st.meatStatus, st.x + st.w / 2, st.y + 42, 1.08);
+            ctx.fillText(state.mapId === 'beach' ? '放生熱狗' : '放生肉排', st.x + st.w / 2, st.y + 55);
+          } else if (st.meatStatus === 'raw_meat') {
+            drawItemMini(ctx, 'raw_meat', st.x + st.w / 2, st.y + 42, 1.08);
             ctx.fillStyle = '#B45309';
             ctx.fillText(`煎製 ${Math.floor(st.cookProgress)}%`, st.x + st.w / 2, st.y + 67);
             ctx.fillStyle = '#E5E7EB';
             ctx.fillRect(st.x + 14, st.y + 74, st.w - 28, 7);
             ctx.fillStyle = '#F59E0B';
             ctx.fillRect(st.x + 14, st.y + 74, ((st.w - 28) * st.cookProgress) / 100, 7);
-          } else if (st.meatStatus === 'patty' || st.meatStatus === 'cooked_hotdog') {
-            drawItemMini(ctx, st.meatStatus, st.x + st.w / 2, st.y + 42, 1.08);
+          } else if (st.meatStatus === 'patty') {
+            drawItemMini(ctx, 'patty', st.x + st.w / 2, st.y + 42, 1.08);
             const left = Math.max(0, 10 - st.overcookSec).toFixed(1);
             const pct = Math.max(0, (10 - st.overcookSec) / 10);
             ctx.fillStyle = st.overcookSec >= 6.5 ? '#DC2626' : '#15803D';
@@ -3481,25 +3494,25 @@
         } else if (st.type === 'freezer') {
           drawItemMini(ctx, 'frozen_fries', st.x + st.w / 2, st.y + 42, 1.05);
           ctx.fillStyle = '#2563EB';
-          ctx.fillText('拿冰塊', st.x + st.w / 2, st.y + 70);
+          ctx.fillText(state.mapId === 'beach' ? '拿冰塊' : '拿冷凍薯條', st.x + st.w / 2, st.y + 70);
         } else if (st.type === 'fryer') {
           if (!st.item) {
             ctx.fillStyle = '#6B7280';
-            ctx.fillText('放冰塊刨冰', st.x + st.w / 2, st.y + 58);
+            ctx.fillText(state.mapId === 'beach' ? '放冰塊刨冰' : '放冷凍薯條炸', st.x + st.w / 2, st.y + 58);
           } else if (st.item === 'frozen_fries') {
             drawItemMini(ctx, 'frozen_fries', st.x + st.w / 2, st.y + 45, 1.05);
-            ctx.fillText(`刨冰 ${st.friesProgress}/2`, st.x + st.w / 2, st.y + 78);
+            ctx.fillText(`${state.mapId === 'beach' ? '刨冰' : '油炸'} ${st.friesProgress}/2`, st.x + st.w / 2, st.y + 78);
           } else {
             drawItemMini(ctx, state.mapId === 'beach' ? 'shaved_ice' : 'fries', st.x + st.w / 2, st.y + 45, 1.08);
             ctx.fillStyle = '#15803D';
-            ctx.fillText('炸好可端走', st.x + st.w / 2, st.y + 78);
+            ctx.fillText(state.mapId === 'beach' ? '刨好可端走' : '炸好可端走', st.x + st.w / 2, st.y + 78);
           }
         } else if (st.type === 'dispenser') {
           if (!st.drinkStatus) {
             ctx.fillStyle = '#2563EB';
-            ctx.fillText('點擊裝西瓜汁', st.x + st.w / 2, st.y + 54);
+            ctx.fillText(state.mapId === 'beach' ? '點擊裝西瓜汁' : '點擊裝可樂', st.x + st.w / 2, st.y + 54);
           } else if (st.drinkStatus === 'filling') {
-            drawItemMini(ctx, 'cola', st.x + st.w / 2, st.y + 40, 0.98);
+            drawItemMini(ctx, 'empty_cup', st.x + st.w / 2, st.y + 40, 0.98);
             ctx.fillStyle = '#B45309';
             ctx.fillText(`裝填 ${Math.floor(st.fillProgress)}%`, st.x + st.w / 2, st.y + 62);
             ctx.fillStyle = '#E5E7EB';
@@ -3655,6 +3668,8 @@
 
     document.getElementById('kitchenCanvas').addEventListener('click', handleCanvasClick);
 
+
+    // === 內建 Web Audio 雙聲道音效引擎（背景音樂 BGM ＋ 互動音效 SFX） ===
     const audioState = {
       ctx: null,
       bgmGain: null,
@@ -3669,6 +3684,10 @@
       stepSoundCooldown: 0
     };
 
+    // 三首風格截然不同的背景音樂：
+    // 0: 1950s 美式復古搖擺（明亮三角波＋走步低音）
+    // 1: 夏日海灘陽光放克（切分音律動＋海島音階）
+    // 2: 深夜奇幻合成器（空靈正弦/方波脈衝）
     const BGM_TRACKS = [
       {
         tempoMs: 310,
