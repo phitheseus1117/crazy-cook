@@ -879,7 +879,7 @@
             </button>
             <button type="button" class="map-pill" id="mapBtnBeach" data-map="beach" onclick="selectGameMap('beach')">
               <span>🏖️ 夏日海灘小站（Beach）</span>
-              <span class="map-pill-sub">西瓜汁 · 刨冰(+果醬) · 熱狗(+番茄/芥末醬)</span>
+              <span class="map-pill-sub">西瓜汁 · 刨冰(+果醬) · 熱狗堡(+番茄/芥末醬)</span>
             </button>
           </div>
         </div>
@@ -1040,14 +1040,14 @@
         const names = combo.map(k => (k === 'sauce_ketchup' ? '番茄醬' : '芥末醬')).join('＋');
         list.push({
           id: 'hotdog_' + i,
-          name: `海灘熱狗（${names}）`,
+          name: `海灘熱狗堡（${names}）`,
           price: combo.length === 2 ? 150 : 125,
           requiredParts: [{ kind: 'hotdog', sauces: [...combo] }]
         });
       });
       list.push({
         id: 'beach_combo',
-        name: '海灘熱狗＋西瓜汁組',
+        name: '海灘熱狗堡＋西瓜汁組',
         price: 215,
         requiredParts: [{ kind: 'hotdog', sauces: ['sauce_ketchup', 'sauce_mustard'] }, { kind: 'watermelon' }]
       });
@@ -1060,6 +1060,8 @@
 
     const ITEM_LABELS = {
       bun: '漢堡麵包',
+      hotdog_bun: '熱狗麵包',
+      raw_hotdog: '生熱狗',
       raw_meat: '生肉排',
       patty: '煎熟肉排',
       burnt_meat: '焦黑廢肉',
@@ -1115,6 +1117,18 @@
           <path d="M4 15C4 9.5 8.5 6.5 14 6.5C19.5 6.5 24 9.5 24 15H4Z" fill="#F59E0B" stroke="#1A1A1A" stroke-width="2.2"/>
           <circle cx="11" cy="11" r="1.1" fill="#FFFBEB"/><circle cx="15" cy="9.8" r="1.1" fill="#FFFBEB"/><circle cx="18.5" cy="11.5" r="1.1" fill="#FFFBEB"/>
           <rect x="4" y="17.5" width="20" height="4" rx="2" fill="#D97706" stroke="#1A1A1A" stroke-width="2"/>
+        </svg>`;
+      }
+      if (key === 'hotdog_bun') {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
+          <rect x="3" y="8" width="22" height="12" rx="6" fill="#FBBF24" stroke="#1A1A1A" stroke-width="2.2"/>
+          <line x1="6" y1="14" x2="22" y2="14" stroke="#D97706" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>`;
+      }
+      if (key === 'raw_hotdog') {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
+          <rect x="4" y="10" width="20" height="8" rx="4" fill="#FB7185" stroke="#1A1A1A" stroke-width="2.2"/>
+          <line x1="7" y1="14" x2="21" y2="14" stroke="#FFE4E6" stroke-width="1.6" stroke-linecap="round"/>
         </svg>`;
       }
       if (key === 'patty') {
@@ -1736,19 +1750,21 @@
     function setupKitchen() {
       if (state.mapId === 'beach') {
         state.stations = [
-          { id: 'crate_sauce_sb', type: 'sauce_crate', sauce: 'sauce_strawberry', label: '草莓果醬', x: 165, y: 20, w: 104, h: 66 },
-          { id: 'crate_sauce_ml', type: 'sauce_crate', sauce: 'sauce_melon', label: '哈密瓜醬', x: 279, y: 20, w: 104, h: 66 },
-          { id: 'crate_sauce_sd', type: 'sauce_crate', sauce: 'sauce_soda', label: '蘇打果醬', x: 393, y: 20, w: 104, h: 66 },
-          { id: 'crate_sauce_kc', type: 'sauce_crate', sauce: 'sauce_ketchup', label: '番茄醬', x: 507, y: 20, w: 104, h: 66 },
-          { id: 'crate_sauce_ms', type: 'sauce_crate', sauce: 'sauce_mustard', label: '芥末醬', x: 621, y: 20, w: 104, h: 66 },
+          { id: 'crate_hotdog_bun', type: 'crate', item: 'hotdog_bun', label: '熱狗麵包箱', x: 165, y: 20, w: 96, h: 66 },
+          { id: 'crate_raw_hotdog', type: 'crate', item: 'raw_hotdog', label: '熱狗儲藏箱', x: 267, y: 20, w: 96, h: 66 },
+          { id: 'crate_sauce_sb', type: 'sauce_crate', sauce: 'sauce_strawberry', label: '草莓果醬', x: 369, y: 20, w: 88, h: 66 },
+          { id: 'crate_sauce_ml', type: 'sauce_crate', sauce: 'sauce_melon', label: '哈密瓜醬', x: 463, y: 20, w: 88, h: 66 },
+          { id: 'crate_sauce_sd', type: 'sauce_crate', sauce: 'sauce_soda', label: '蘇打果醬', x: 557, y: 20, w: 88, h: 66 },
+          { id: 'crate_sauce_kc', type: 'sauce_crate', sauce: 'sauce_ketchup', label: '番茄醬', x: 651, y: 20, w: 84, h: 66 },
+          { id: 'crate_sauce_ms', type: 'sauce_crate', sauce: 'sauce_mustard', label: '芥末醬', x: 741, y: 20, w: 84, h: 66 },
 
           { id: 'grill_1', type: 'grill', label: '烤熱狗台 #1', x: 24, y: 112, w: 114, h: 84, meatStatus: null, cookProgress: 0, overcookSec: 0 },
           { id: 'grill_2', type: 'grill', label: '烤熱狗台 #2', x: 24, y: 204, w: 114, h: 84, meatStatus: null, cookProgress: 0, overcookSec: 0 },
           { id: 'freezer_1', type: 'freezer', label: '冰塊冷凍櫃', x: 24, y: 296, w: 114, h: 84 },
           { id: 'fryer_1', type: 'fryer', label: '刨冰機', x: 24, y: 388, w: 114, h: 98, item: null, friesProgress: 0 },
 
-          { id: 'assembly_1', type: 'hotdog_bench', label: '熱狗擠醬台 A', x: 342, y: 172, w: 132, h: 98, sauces: [] },
-          { id: 'assembly_2', type: 'ice_bench', label: '刨冰擠醬台 B', x: 492, y: 172, w: 132, h: 98, sauce: null },
+          { id: 'assembly_1', type: 'hotdog_bench', label: '熱狗堡組裝台 A', x: 342, y: 172, w: 138, h: 98, hasBun: false, hasDog: false, sauces: [] },
+          { id: 'assembly_2', type: 'ice_bench', label: '刨冰擠醬台 B', x: 496, y: 172, w: 132, h: 98, sauce: null },
 
           { id: 'dispenser_1', type: 'dispenser', label: '西瓜汁機 #1', x: 380, y: 365, w: 132, h: 84, drinkStatus: null, fillProgress: 0, overfillSec: 0 },
           { id: 'dispenser_2', type: 'dispenser', label: '西瓜汁機 #2', x: 526, y: 365, w: 132, h: 84, drinkStatus: null, fillProgress: 0, overfillSec: 0 },
@@ -1863,7 +1879,7 @@
       if (h.kind === 'shaved_ice') return h.sauce ? `刨冰（${ITEM_LABELS[h.sauce]}）` : '綿密刨冰（未擠醬）';
       if (h.kind === 'hotdog') {
         const s = (h.sauces || []).map(k => (k === 'sauce_ketchup' ? '番茄醬' : '芥末醬')).join('＋');
-        return s ? `熱狗（${s}）` : '海灘熱狗（未擠醬）';
+        return s ? `熱狗堡（${s}）` : '海灘熱狗堡（未擠醬）';
       }
       return '空手';
     }
@@ -2281,7 +2297,7 @@
           showToast(`${chef.tag} 手上已有物品`);
         }
       } else if (st.type === 'grill') {
-        if (!st.meatStatus && chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'raw_meat') {
+        if (!st.meatStatus && chef.holding && chef.holding.kind === 'single' && (chef.holding.item === 'raw_meat' || chef.holding.item === 'raw_hotdog')) {
           st.meatStatus = 'raw_meat';
           st.cookProgress = 0;
           st.overcookSec = 0;
@@ -2370,7 +2386,7 @@
         if (!chef.holding) {
           chef.holding = { kind: 'single', item: 'frozen_fries' };
           spawnBurstParticles(scx, scy, '#60A5FA', 5);
-          playSfx('pickup'); showToast(`${chef.tag} 從冷凍櫃拿出冷凍薯條/冰塊！`);
+          playSfx('pickup'); showToast(`${chef.tag} 從冷凍櫃拿出冷凍薯條，去油炸機炸熟！`);
         } else {
           showToast(`${chef.tag} 手上已有物品`);
         }
@@ -2380,21 +2396,21 @@
           st.friesProgress = 0;
           chef.holding = null;
           spawnBurstParticles(scx, scy, '#FACC15', 6);
-          playSfx('drop'); showToast(`${chef.tag} 將食材放進機台`);
+          playSfx('drop'); showToast(`${chef.tag} 將冷凍薯條放進油炸機`);
         } else if (st.item === 'frozen_fries' && !chef.holding) {
           st.friesProgress += 1;
           spawnBurstParticles(scx, scy, '#FACC15', 6);
           if (st.friesProgress >= 2) {
             st.item = 'fries';
-            playSfx('chop'); showToast('完成了！可端走');
+            playSfx('chop'); showToast('炸薯條完成了！可端去輸送帶出餐');
           } else {
-            playSfx('chop'); showToast(`處理中（${st.friesProgress}/2）`);
+            playSfx('chop'); showToast(`油炸中（${st.friesProgress}/2）`);
           }
         } else if (st.item === 'fries' && !chef.holding) {
-          chef.holding = state.mapId === 'beach' ? { kind: 'shaved_ice', sauce: null } : { kind: 'fries' };
+          chef.holding = { kind: 'fries' };
           st.item = null;
           st.friesProgress = 0;
-          playSfx('pickup'); showToast(`${chef.tag} 端起${state.mapId === 'beach' ? '綿密刨冰' : '金黃炸薯條'}！`);
+          playSfx('pickup'); showToast(`${chef.tag} 端起金黃炸薯條，去輸送帶出餐！`);
         }
       } else if (st.type === 'sauce_crate') {
         if (!chef.holding) {
@@ -2418,17 +2434,25 @@
           showToast(`${chef.tag} 手上已有物品`);
         }
       } else if (st.type === 'hotdog_bench') {
-        if (chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'patty') {
+        if (chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'hotdog_bun') {
+          if (!st.hasBun) {
+            st.hasBun = true;
+            chef.holding = null;
+            playSfx('drop'); showToast(`${chef.tag} 放上熱狗麵包，再放烤熟熱狗`);
+          } else {
+            showToast('組裝台已有熱狗麵包');
+          }
+        } else if (chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'patty') {
           if (!st.hasDog) {
             st.hasDog = true;
-            st.sauces = [];
+            st.sauces = st.sauces || [];
             chef.holding = null;
-            playSfx('drop'); showToast(`${chef.tag} 放上熱狗，可擠番茄醬或芥末醬`);
+            playSfx('stack'); showToast(`${chef.tag} 放上烤熟熱狗，可擠番茄醬或芥末醬`);
           } else {
-            showToast('熱狗擠醬台已有熱狗');
+            showToast('組裝台已有熱狗');
           }
         } else if (chef.holding && chef.holding.kind === 'single' && (chef.holding.item === 'sauce_ketchup' || chef.holding.item === 'sauce_mustard')) {
-          if (st.hasDog) {
+          if (st.hasDog || st.hasBun) {
             st.sauces = st.sauces || [];
             if (!st.sauces.includes(chef.holding.item)) {
               st.sauces.push(chef.holding.item);
@@ -2440,19 +2464,20 @@
               showToast('已擠過相同醬料');
             }
           } else {
-            showToast('請先放上熟熱狗再擠醬');
+            showToast('請先放上熱狗麵包與烤熟熱狗再擠醬');
           }
-        } else if (!chef.holding && st.hasDog) {
-          chef.holding = { kind: 'hotdog', sauces: [...(st.sauces || [])] };
+        } else if (!chef.holding && (st.hasDog || st.hasBun)) {
+          chef.holding = { kind: 'hotdog', hasBun: Boolean(st.hasBun), sauces: [...(st.sauces || [])] };
+          st.hasBun = false;
           st.hasDog = false;
           st.sauces = [];
-          playSfx('pickup'); showToast(`${chef.tag} 端起海灘熱狗！`);
+          playSfx('pickup'); showToast(`${chef.tag} 端起熱狗堡！`);
         }
       } else if (st.type === 'ice_bench') {
-        if (chef.holding && (chef.holding.kind === 'fries' || chef.holding.kind === 'shaved_ice')) {
+        if (chef.holding && chef.holding.kind === 'fries') {
           if (!st.hasIce) {
             st.hasIce = true;
-            st.sauce = chef.holding.sauce || null;
+            st.sauce = null;
             chef.holding = null;
             playSfx('drop'); showToast(`${chef.tag} 放上刨冰，請選一種果醬擠上`);
           } else {
@@ -2941,75 +2966,6 @@
         ctx.stroke();
         ctx.fillStyle = key === 'cola' ? '#EF4444' : '#A1A1AA';
         ctx.fillRect(-9, -9.5, 18, 3);
-      } else if (key === 'watermelon') {
-        ctx.fillStyle = '#FB7185';
-        ctx.beginPath();
-        ctx.moveTo(-8, -8);
-        ctx.lineTo(8, -8);
-        ctx.lineTo(6.5, 9);
-        ctx.lineTo(-6.5, 9);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = '#22C55E';
-        ctx.fillRect(-9, -9.5, 18, 3);
-      } else if (key === 'shaved_ice') {
-        ctx.fillStyle = '#E0F2FE';
-        ctx.beginPath();
-        ctx.arc(0, -1, 8.5, Math.PI, 0);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = '#38BDF8';
-        ctx.beginPath();
-        ctx.moveTo(-8, -1);
-        ctx.lineTo(8, -1);
-        ctx.lineTo(6, 9);
-        ctx.lineTo(-6, 9);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      } else if (key === 'hotdog') {
-        ctx.fillStyle = '#FBBF24';
-        drawRoundRect(ctx, -11, -5, 22, 10, 5);
-        ctx.fill();
-        ctx.stroke();
-        ctx.strokeStyle = '#EF4444';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-8, 0);
-        ctx.lineTo(8, 0);
-        ctx.stroke();
-      } else if (key === 'sauce_strawberry') {
-        ctx.fillStyle = '#F472B6';
-        ctx.beginPath();
-        ctx.arc(0, 1, 8.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      } else if (key === 'sauce_melon') {
-        ctx.fillStyle = '#86EFAC';
-        ctx.beginPath();
-        ctx.arc(0, 1, 8.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      } else if (key === 'sauce_soda') {
-        ctx.fillStyle = '#7DD3FC';
-        ctx.beginPath();
-        ctx.arc(0, 1, 8.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      } else if (key === 'sauce_ketchup') {
-        ctx.fillStyle = '#EF4444';
-        ctx.beginPath();
-        ctx.arc(0, 1, 8.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      } else if (key === 'sauce_mustard') {
-        ctx.fillStyle = '#FACC15';
-        ctx.beginPath();
-        ctx.arc(0, 1, 8.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
       }
 
       ctx.restore();
@@ -3304,7 +3260,7 @@
         } else if (st.type === 'hotdog_bench') {
           if (!st.hasDog) {
             ctx.fillStyle = '#6B7280';
-            ctx.fillText('放熱狗擠醬', st.x + st.w / 2, st.y + 56);
+            ctx.fillText('放麵包+熱狗擠醬', st.x + st.w / 2, st.y + 56);
           } else {
             drawItemMini(ctx, 'hotdog', st.x + st.w / 2, st.y + 44, 1.12);
             const sTxt = (st.sauces || []).map(k => (k === 'sauce_ketchup' ? '番茄' : '芥末')).join('+') || '無醬';
@@ -3383,25 +3339,25 @@
         } else if (st.type === 'freezer') {
           drawItemMini(ctx, 'frozen_fries', st.x + st.w / 2, st.y + 42, 1.05);
           ctx.fillStyle = '#2563EB';
-          ctx.fillText('拿冷凍食材', st.x + st.w / 2, st.y + 70);
+          ctx.fillText('拿冷凍薯條', st.x + st.w / 2, st.y + 70);
         } else if (st.type === 'fryer') {
           if (!st.item) {
             ctx.fillStyle = '#6B7280';
-            ctx.fillText('放食材處理', st.x + st.w / 2, st.y + 58);
+            ctx.fillText('放冷凍薯條炸', st.x + st.w / 2, st.y + 58);
           } else if (st.item === 'frozen_fries') {
             drawItemMini(ctx, 'frozen_fries', st.x + st.w / 2, st.y + 45, 1.05);
-            ctx.fillText(`處理 ${st.friesProgress}/2`, st.x + st.w / 2, st.y + 78);
+            ctx.fillText(`油炸 ${st.friesProgress}/2`, st.x + st.w / 2, st.y + 78);
           } else {
-            drawItemMini(ctx, state.mapId === 'beach' ? 'shaved_ice' : 'fries', st.x + st.w / 2, st.y + 45, 1.08);
+            drawItemMini(ctx, 'fries', st.x + st.w / 2, st.y + 45, 1.08);
             ctx.fillStyle = '#15803D';
-            ctx.fillText('完成可端走', st.x + st.w / 2, st.y + 78);
+            ctx.fillText('炸好可端走', st.x + st.w / 2, st.y + 78);
           }
         } else if (st.type === 'dispenser') {
           if (!st.drinkStatus) {
             ctx.fillStyle = '#2563EB';
-            ctx.fillText('點擊裝飲品', st.x + st.w / 2, st.y + 54);
+            ctx.fillText('點擊裝可樂', st.x + st.w / 2, st.y + 54);
           } else if (st.drinkStatus === 'filling') {
-            drawItemMini(ctx, state.mapId === 'beach' ? 'watermelon' : 'cola', st.x + st.w / 2, st.y + 40, 0.98);
+            drawItemMini(ctx, 'cola', st.x + st.w / 2, st.y + 40, 0.98);
             ctx.fillStyle = '#B45309';
             ctx.fillText(`裝填 ${Math.floor(st.fillProgress)}%`, st.x + st.w / 2, st.y + 62);
             ctx.fillStyle = '#E5E7EB';
@@ -3411,7 +3367,7 @@
           } else if (st.drinkStatus === 'ready') {
             drawItemMini(ctx, state.mapId === 'beach' ? 'watermelon' : 'cola', st.x + st.w / 2, st.y + 40, 1.02);
             ctx.fillStyle = '#15803D';
-            ctx.fillText('可端去出餐台', st.x + st.w / 2, st.y + 66);
+            ctx.fillText('可端去輸送帶', st.x + st.w / 2, st.y + 66);
           } else {
             drawItemMini(ctx, 'burnt_cola', st.x + st.w / 2, st.y + 40, 1.02);
             ctx.fillStyle = '#DC2626';
@@ -3517,13 +3473,18 @@
         <h3 style="margin-top:0;">Crazy COOK V2.9 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
           <li><strong>120 秒挑戰：</strong>單局時間為 120 秒（<code>2:00</code>），支援 2～4 人透過 Render WebSocket 同步遊玩。</li>
-          <li><strong>地圖切換：</strong>在準備室可切換「美式快餐店」或「夏日海灘小站」，各自對應不同餐點與擠醬玩法。</li>
-          <li><strong>走近再點：</strong>需先走近台子或物品碰撞箱旁邊，再點擊進行拿取、擠醬或出餐。</li>
+          <li><strong>炸薯條與冰涼可樂：</strong>從「冷凍櫃」拿薯條到「油炸機」炸 2 下完成；或點擊「飲料機」等裝填完成後端可樂，再送去「送餐輸送帶」出餐。</li>
+          <li><strong>單點與套餐組合：</strong>訂單會以圖示顯示單點或套餐組合，依序把對應餐點送到輸送帶即可完成。</li>
         </ol>
         <div style="text-align:right;margin-top:14px;">
           <button class="btn btn-mint" onclick="closeModal()">知道了</button>
         </div>
       `);
+    }
+
+    function toggleSound() {
+      state.soundOn = !state.soundOn;
+      document.getElementById('soundToggleBtn').textContent = state.soundOn ? '音效：開' : '音效：關';
     }
 
     function openModal(html) {
