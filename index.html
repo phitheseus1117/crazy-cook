@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crazy COOK — 美式復古快餐廚房 V2.6（多中繼穿透與自動重連）</title>
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <style>
+  <title>Crazy COOK — 美式復古快餐廚房 V2.7（Render WebSocket 即時聯機）</title>
+    <style>
     :root {
       --bg-cream: #FFF8E7;
       --ink: #1A1A1A;
@@ -595,7 +594,7 @@
     <div class="brand-badge">
       <span class="brand-icon-box" id="topLogoIcon"></span>
       <span>CRAZY COOK</span>
-      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V2.6</span>
+      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V2.7</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-light" onclick="openHelpModal()">玩法與操作說明</button>
@@ -815,39 +814,8 @@
   </div>
 
   <script>
-    const ROOM_PREFIX = 'crazycook-v26-room-';
-
-    const PEER_CONFIG = {
-      debug: 1,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun.relay.metered.ca:80' },
-          {
-            urls: 'turn:global.relay.metered.ca:80',
-            username: 'e8dd65b92f62d3e365b807c9',
-            credential: '3k8+2H4k5g3v1A2s'
-          },
-          {
-            urls: 'turn:global.relay.metered.ca:80?transport=tcp',
-            username: 'e8dd65b92f62d3e365b807c9',
-            credential: '3k8+2H4k5g3v1A2s'
-          },
-          {
-            urls: 'turn:global.relay.metered.ca:443',
-            username: 'e8dd65b92f62d3e365b807c9',
-            credential: '3k8+2H4k5g3v1A2s'
-          },
-          {
-            urls: 'turns:global.relay.metered.ca:443?transport=tcp',
-            username: 'e8dd65b92f62d3e365b807c9',
-            credential: '3k8+2H4k5g3v1A2s'
-          }
-        ],
-        iceCandidatePoolSize: 10
-      }
-    };
+    // 請將下方網址替換為你在 Render 部署後拿到的 wss:// 網址（例如 wss://crazy-cook-ws.onrender.com）
+    const WS_SERVER_URL = 'wss://crazy-cook-ws-server.onrender.com';
 
     const state = {
       playerName: '漢堡小當家',
@@ -886,13 +854,9 @@
     const CANVAS_W = 960;
     const CANVAS_H = 540;
 
-    let peer = null;
-    let hostConns = [];
-    let guestConn = null;
+    let wsSocket = null;
     let netTickTimer = null;
-    let helloRetryTimer = null;
-    let guestConnectWatchdog = null;
-    let connectAttemptCount = 0;
+    let pendingIntent = null; // { action: 'create' | 'join', code }
 
     const RECIPES = [
       { id: 'classic', name: '經典美式起司堡', price: 120, items: ['bun', 'patty', 'cheese', 'bun'] },
@@ -1089,38 +1053,19 @@
     function cleanupNetwork() {
       clearInterval(netTickTimer);
       netTickTimer = null;
-      clearInterval(helloRetryTimer);
-      helloRetryTimer = null;
-      clearTimeout(guestConnectWatchdog);
-      guestConnectWatchdog = null;
-      hostConns.forEach(c => {
-        try { c.close(); } catch (e) {}
-      });
-      hostConns = [];
-      if (guestConn) {
-        try { guestConn.close(); } catch (e) {}
-        guestConn = null;
-      }
-      if (peer) {
-        try { peer.destroy(); } catch (e) {}
-        peer = null;
+      if (wsSocket) {
+        try {
+          wsSocket.onclose = null;
+          wsSocket.close();
+        } catch (e) {}
+        wsSocket = null;
       }
       state.connected = false;
     }
 
-    function sendToGuest(conn, msg) {
-      if (conn && conn.open) {
-        try { conn.send(msg); } catch (e) {}
-      }
-    }
-
-    function broadcastFromHost(msg) {
-      hostConns.forEach(conn => sendToGuest(conn, msg));
-    }
-
-    function sendToHost(msg) {
-      if (guestConn && guestConn.open) {
-        try { guestConn.send(msg); } catch (e) {}
+    function sendWs(msg) {
+      if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
+        try { wsSocket.send(JSON.stringify(msg)); } catch (e) {}
       }
     }
 
@@ -1155,92 +1100,136 @@
       goScreen('screenRoomSelect');
     }
 
-    function retryConnection() {
-      if (!state.roomCode || state.mode !== 'online') return;
-      connectAttemptCount = 0;
-      if (state.mySlotId === 'p1') {
-        initHostPeer(state.roomCode);
-      } else {
-        initGuestPeer(state.roomCode);
-      }
-    }
-
-    function initHostPeer(code) {
+    function connectWebSocketAndRun(intent) {
       cleanupNetwork();
+      pendingIntent = intent;
       state.connected = false;
-      setConnIndicator('wait', `正在註冊 ${state.maxPlayers} 人房號 #${code} 連線頻道...`);
+      setConnIndicator('wait', `正在連線至 Render 即時同步伺服器（若 Render 剛休眠喚醒請稍候數秒）...`);
 
-      peer = new Peer(ROOM_PREFIX + code, PEER_CONFIG);
-      peer.on('open', () => {
-        setConnIndicator('wait', `${state.maxPlayers} 人房號 #${code} 已就緒！等待夥伴輸入房號加入...`);
-      });
+      const socket = new WebSocket(WS_SERVER_URL);
+      wsSocket = socket;
 
-      peer.on('connection', (conn) => {
-        if (state.players.length >= state.maxPlayers) {
-          conn.on('open', () => {
-            sendToGuest(conn, { type: 'room_full', maxPlayers: state.maxPlayers });
-            setTimeout(() => conn.close(), 200);
+      socket.onopen = () => {
+        state.connected = true;
+        setConnIndicator('online', `已連上 Render 同步伺服器！正在同步房號 #${intent.code}...`);
+        if (intent.action === 'create') {
+          sendWs({
+            type: 'create_room',
+            roomCode: intent.code,
+            maxPlayers: state.maxPlayers,
+            uid: state.clientUid,
+            player: {
+              name: state.playerName,
+              skin: state.skin,
+              band: state.band,
+              bandName: state.bandName
+            }
           });
+        } else if (intent.action === 'join') {
+          sendWs({
+            type: 'join_room',
+            roomCode: intent.code,
+            uid: state.clientUid,
+            player: {
+              name: state.playerName,
+              skin: state.skin,
+              band: state.band,
+              bandName: state.bandName
+            }
+          });
+        }
+      };
+
+      socket.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch (e) { return; }
+        if (!msg || !msg.type) return;
+
+        if (msg.type === 'room_error') {
+          setConnIndicator('err', msg.message || '加入房間失敗');
+          renderReadyPlayers();
           return;
         }
-        hostConns.push(conn);
-        setupHostConnection(conn);
-      });
 
-      peer.on('disconnected', () => {
-        setConnIndicator('wait', `連線中繼暫時中斷，正在自動重連 #${code}...`);
-        try { peer.reconnect(); } catch (e) {}
-      });
+        if (msg.type === 'room_created') {
+          state.mySlotId = msg.slotId || 'p1';
+          state.maxPlayers = msg.maxPlayers || state.maxPlayers;
+          state.players = msg.players || state.players;
+          document.getElementById('roomModeTag').textContent = `${state.maxPlayers} 人連線模式 · 房主 (P1)`;
+          document.getElementById('roomCodeBadge').textContent = `房號 #${state.roomCode}（${state.maxPlayers}人房）`;
+          setConnIndicator('online', `房號 #${state.roomCode} 已建立！等待夥伴輸入房號加入（${state.players.length}/${state.maxPlayers} 人）`);
+          renderReadyPlayers();
+        } else if (msg.type === 'slot_assigned') {
+          state.mySlotId = msg.slotId;
+          state.maxPlayers = msg.maxPlayers || state.maxPlayers;
+          document.getElementById('roomModeTag').textContent = `${state.maxPlayers} 人連線模式 · 你是 ${state.mySlotId.toUpperCase()}`;
+          document.getElementById('roomCodeBadge').textContent = `房號 #${state.roomCode}（${state.maxPlayers}人房）`;
+        } else if (msg.type === 'lobby_state') {
+          if (msg.maxPlayers) state.maxPlayers = msg.maxPlayers;
+          if (Array.isArray(msg.players)) {
+            state.players = msg.players;
+            const meInList = state.players.find(p => p.uid === state.clientUid);
+            if (meInList) state.mySlotId = meInList.id;
+            setConnIndicator('online', `房號 #${state.roomCode} 已連線（${state.players.length}/${state.maxPlayers} 人）`);
+            renderReadyPlayers();
+          }
+        } else if (msg.type === 'game_start') {
+          startGuestGameFromHost(msg.snapshot);
+        } else if (msg.type === 'player_move') {
+          const chef = state.chefs.find(c => c.id === msg.slotId);
+          if (chef && chef.id !== state.mySlotId) {
+            chef.x = msg.x;
+            chef.y = msg.y;
+            chef.angle = msg.angle;
+            chef.walkPhase = msg.walkPhase;
+            pushTrailPoint(msg.slotId, chef.x, chef.y);
+          }
+        } else if (msg.type === 'player_action') {
+          const chef = state.chefs.find(c => c.id === msg.slotId);
+          if (chef && state.mySlotId === 'p1') {
+            chef.x = msg.x;
+            chef.y = msg.y;
+            chef.angle = msg.angle;
+            pushTrailPoint(msg.slotId, chef.x, chef.y);
+            if (msg.clickTarget) {
+              handlePointerActionForChef(chef, msg.clickTarget.x, msg.clickTarget.y);
+            } else {
+              triggerActionForChef(chef);
+            }
+            sendWorldStateToGuests();
+          }
+        } else if (msg.type === 'world_state') {
+          applyWorldStateOnGuest(msg.snapshot);
+        } else if (msg.type === 'game_over') {
+          showSharedResultModal(msg.result);
+        } else if (msg.type === 'return_to_lobby') {
+          closeModal();
+          resetToReadyLobby();
+        }
+      };
 
-      peer.on('error', (err) => {
-        setConnIndicator('err', `房號 #${code} 連線狀態：${err.type || '錯誤'}（可點「強制重連」或返回重開房號）`);
-      });
+      socket.onerror = () => {
+        setConnIndicator('err', `無法連線至 ${WS_SERVER_URL}，請確認 Render 服務已啟動且網址正確`);
+      };
+
+      socket.onclose = () => {
+        if (state.mode === 'online') {
+          state.connected = false;
+          setConnIndicator('err', '與 Render 同步伺服器的連線已中斷，可點「重新連線」');
+          renderReadyPlayers();
+        }
+      };
     }
 
-    function initGuestPeer(code) {
-      cleanupNetwork();
-      state.connected = false;
-      connectAttemptCount += 1;
-      setConnIndicator('wait', `正在連線至房號 #${code}（第 ${connectAttemptCount} 次嘗試，含 TURN 中繼穿透）...`);
-
-      peer = new Peer(undefined, PEER_CONFIG);
-      peer.on('open', () => {
-        const conn = peer.connect(ROOM_PREFIX + code, {
-          reliable: true,
-          serialization: 'json'
-        });
-        guestConn = conn;
-        setupGuestConnection(conn);
-
-        clearTimeout(guestConnectWatchdog);
-        guestConnectWatchdog = setTimeout(() => {
-          if (!state.connected && state.mode === 'online' && state.mySlotId !== 'p1') {
-            if (connectAttemptCount < 6) {
-              initGuestPeer(code);
-            } else {
-              setConnIndicator('err', `多次嘗試連上 #${code} 仍逾時，請確認房主仍在準備室並點「強制重連」`);
-            }
-          }
-        }, 5500);
-      });
-
-      peer.on('error', (err) => {
-        clearTimeout(guestConnectWatchdog);
-        if (connectAttemptCount < 6 && state.mode === 'online') {
-          setConnIndicator('wait', `連線遇到 ${err.type || '波動'}，2 秒後自動重試第 ${connectAttemptCount + 1} 次...`);
-          guestConnectWatchdog = setTimeout(() => initGuestPeer(code), 2000);
-        } else {
-          setConnIndicator('err', `無法連上房號 #${code}（${err.type || '連線逾時'}），請確認房號並按「強制重連」`);
-        }
+    function retryConnection() {
+      if (!state.roomCode || state.mode !== 'online') return;
+      connectWebSocketAndRun({
+        action: state.mySlotId === 'p1' ? 'create' : 'join',
+        code: state.roomCode
       });
     }
 
     function createOnlineRoom() {
-      if (typeof Peer === 'undefined') {
-        document.getElementById('roomErrorMsg').textContent = '連線元件尚未載入完成，請稍後再試！';
-        return;
-      }
-      cleanupNetwork();
       syncPlayerName();
       const code = String(Math.floor(1000 + Math.random() * 9000));
       state.mode = 'online';
@@ -1262,7 +1251,7 @@
       document.getElementById('readySubHint').textContent = `等待夥伴加入（上限 ${state.maxPlayers} 人）並全員按下準備，由房主按「開始營業！」。`;
       renderReadyPlayers();
       goScreen('screenReady');
-      initHostPeer(code);
+      connectWebSocketAndRun({ action: 'create', code });
     }
 
     function joinOnlineRoom() {
@@ -1271,13 +1260,7 @@
         document.getElementById('roomErrorMsg').textContent = '請輸入 4 碼數字房號！';
         return;
       }
-      if (typeof Peer === 'undefined') {
-        document.getElementById('roomErrorMsg').textContent = '連線元件尚未載入完成，請稍後再試！';
-        return;
-      }
-      cleanupNetwork();
       syncPlayerName();
-      connectAttemptCount = 0;
       state.mode = 'online';
       state.mySlotId = 'p2';
       state.roomCode = code;
@@ -1299,211 +1282,7 @@
       document.getElementById('readySubHint').textContent = '按下「準備」後同步給房主與隊友，全員準備後由房主開始營業！';
       renderReadyPlayers();
       goScreen('screenReady');
-      initGuestPeer(code);
-    }
-
-    function pickNextAvailableSlotId(clientUid) {
-      if (clientUid) {
-        const existing = state.players.find(p => p.uid === clientUid);
-        if (existing) return existing.id;
-      }
-      const used = new Set(state.players.map(p => p.id));
-      for (const sid of ['p2', 'p3', 'p4']) {
-        if (!used.has(sid)) return sid;
-      }
-      return null;
-    }
-
-    function setupHostConnection(conn) {
-      conn.on('open', () => {
-        state.connected = true;
-        setConnIndicator('online', `房號 #${state.roomCode} 通道已建立，正在同步新加入玩家...`);
-        sendToGuest(conn, {
-          type: 'request_join_info',
-          maxPlayers: state.maxPlayers
-        });
-      });
-
-      conn.on('data', (msg) => {
-        if (!msg || !msg.type) return;
-
-        if (msg.type === 'guest_hello') {
-          const uid = msg.uid || conn.peer;
-          const sid = pickNextAvailableSlotId(uid);
-          if (!sid) {
-            sendToGuest(conn, { type: 'room_full', maxPlayers: state.maxPlayers });
-            conn.close();
-            return;
-          }
-          conn._slotId = sid;
-          conn._uid = uid;
-          state.connected = true;
-
-          const filtered = state.players.filter(p => p.id !== sid && p.uid !== uid);
-          const cleanName = (msg.player.name || '夥伴').replace(/\s*\(P[1-4]\)\s*$/i, '').trim() || '夥伴';
-          state.players = [...filtered, {
-            id: sid,
-            uid,
-            name: `${cleanName} (${sid.toUpperCase()})`,
-            ready: !!msg.player.ready,
-            skin: msg.player.skin,
-            band: msg.player.band,
-            bandName: msg.player.bandName
-          }];
-          state.players.sort((a, b) => a.id.localeCompare(b.id));
-
-          setConnIndicator('online', `房號 #${state.roomCode} 已連線（目前 ${state.players.length}/${state.maxPlayers} 人）`);
-          renderReadyPlayers();
-          sendToGuest(conn, {
-            type: 'assign_slot',
-            slotId: sid,
-            maxPlayers: state.maxPlayers
-          });
-          broadcastFromHost({
-            type: 'lobby_state',
-            maxPlayers: state.maxPlayers,
-            players: state.players
-          });
-        } else if (msg.type === 'guest_ready_update') {
-          const sid = msg.slotId || conn._slotId;
-          const target = state.players.find(p => p.id === sid);
-          if (target) target.ready = !!msg.ready;
-          renderReadyPlayers();
-          broadcastFromHost({
-            type: 'lobby_state',
-            maxPlayers: state.maxPlayers,
-            players: state.players
-          });
-        } else if (msg.type === 'guest_move') {
-          const sid = msg.slotId || conn._slotId;
-          const chef = state.chefs.find(c => c.id === sid);
-          if (chef) {
-            chef.x = msg.x;
-            chef.y = msg.y;
-            chef.angle = msg.angle;
-            chef.walkPhase = msg.walkPhase;
-            pushTrailPoint(sid, chef.x, chef.y);
-          }
-        } else if (msg.type === 'guest_action') {
-          const sid = msg.slotId || conn._slotId;
-          const chef = state.chefs.find(c => c.id === sid);
-          if (chef) {
-            chef.x = msg.x;
-            chef.y = msg.y;
-            chef.angle = msg.angle;
-            pushTrailPoint(sid, chef.x, chef.y);
-            if (msg.clickTarget) {
-              handlePointerActionForChef(chef, msg.clickTarget.x, msg.clickTarget.y);
-            } else {
-              triggerActionForChef(chef);
-            }
-            sendWorldStateToGuests();
-          }
-        } else if (msg.type === 'return_to_lobby') {
-          closeModal();
-          resetToReadyLobby();
-        }
-      });
-
-      conn.on('close', () => {
-        const sid = conn._slotId;
-        hostConns = hostConns.filter(c => c !== conn);
-        if (sid) {
-          state.players = state.players.filter(p => p.id !== sid);
-        }
-        state.connected = hostConns.length > 0;
-        setConnIndicator(state.connected ? 'online' : 'wait', `房號 #${state.roomCode}（目前 ${state.players.length}/${state.maxPlayers} 人）`);
-        renderReadyPlayers();
-        broadcastFromHost({
-          type: 'lobby_state',
-          maxPlayers: state.maxPlayers,
-          players: state.players
-        });
-      });
-    }
-
-    function setupGuestConnection(conn) {
-      conn.on('open', () => {
-        clearTimeout(guestConnectWatchdog);
-        state.connected = true;
-        connectAttemptCount = 0;
-        setConnIndicator('online', `已連上房號 #${state.roomCode}，正在同步房間名單...`);
-
-        const sendHello = () => {
-          if (!state.connected || state.gameStarted) return;
-          sendToHost({
-            type: 'guest_hello',
-            uid: state.clientUid,
-            player: {
-              name: state.playerName,
-              ready: state.players.find(p => p.uid === state.clientUid)?.ready || false,
-              skin: state.skin,
-              band: state.band,
-              bandName: state.bandName
-            }
-          });
-        };
-        sendHello();
-        clearInterval(helloRetryTimer);
-        helloRetryTimer = setInterval(() => {
-          const syncedMe = state.players.some(p => p.uid === state.clientUid) && state.players.some(p => p.id === 'p1');
-          if (!syncedMe && !state.gameStarted && state.connected) {
-            sendHello();
-          } else {
-            clearInterval(helloRetryTimer);
-          }
-        }, 700);
-      });
-
-      conn.on('data', (msg) => {
-        if (!msg || !msg.type) return;
-
-        if (msg.type === 'request_join_info') {
-          sendToHost({
-            type: 'guest_hello',
-            uid: state.clientUid,
-            player: {
-              name: state.playerName,
-              ready: state.players.find(p => p.uid === state.clientUid)?.ready || false,
-              skin: state.skin,
-              band: state.band,
-              bandName: state.bandName
-            }
-          });
-        } else if (msg.type === 'assign_slot') {
-          state.mySlotId = msg.slotId;
-          state.maxPlayers = msg.maxPlayers || state.maxPlayers;
-          document.getElementById('roomModeTag').textContent = `${state.maxPlayers} 人連線模式 · 你是 ${state.mySlotId.toUpperCase()}`;
-          document.getElementById('roomCodeBadge').textContent = `房號 #${state.roomCode}（${state.maxPlayers}人房）`;
-        } else if (msg.type === 'room_full') {
-          setConnIndicator('err', `此房間人數已滿（上限 ${msg.maxPlayers} 人）`);
-        } else if (msg.type === 'lobby_state') {
-          state.connected = true;
-          if (msg.maxPlayers) state.maxPlayers = msg.maxPlayers;
-          if (Array.isArray(msg.players)) {
-            state.players = msg.players;
-            const meInList = state.players.find(p => p.uid === state.clientUid);
-            if (meInList) state.mySlotId = meInList.id;
-            setConnIndicator('online', `房號 #${state.roomCode} 已連線（${state.players.length}/${state.maxPlayers} 人）`);
-            renderReadyPlayers();
-          }
-        } else if (msg.type === 'game_start') {
-          startGuestGameFromHost(msg.snapshot);
-        } else if (msg.type === 'world_state') {
-          applyWorldStateOnGuest(msg.snapshot);
-        } else if (msg.type === 'game_over') {
-          showSharedResultModal(msg.result);
-        } else if (msg.type === 'return_to_lobby') {
-          closeModal();
-          resetToReadyLobby();
-        }
-      });
-
-      conn.on('close', () => {
-        state.connected = false;
-        setConnIndicator('err', '與房主的連線已中斷，可點「強制重連」');
-        renderReadyPlayers();
-      });
+      connectWebSocketAndRun({ action: 'join', code });
     }
 
     function toggleMyReady() {
@@ -1513,19 +1292,12 @@
       renderReadyPlayers();
 
       if (state.mode === 'online') {
-        if (state.mySlotId === 'p1') {
-          broadcastFromHost({
-            type: 'lobby_state',
-            maxPlayers: state.maxPlayers,
-            players: state.players
-          });
-        } else {
-          sendToHost({
-            type: 'guest_ready_update',
-            slotId: state.mySlotId,
-            ready: me.ready
-          });
-        }
+        sendWs({
+          type: 'ready_update',
+          roomCode: state.roomCode,
+          slotId: state.mySlotId,
+          ready: me.ready
+        });
       }
     }
 
@@ -1561,7 +1333,7 @@
       goScreen('screenReady');
 
       if (state.mode === 'online' && state.mySlotId === 'p1') {
-        broadcastFromHost({
+        sendWs({
           type: 'lobby_state',
           maxPlayers: state.maxPlayers,
           players: state.players
@@ -1797,7 +1569,7 @@
 
     function sendWorldStateToGuests() {
       if (state.mode !== 'online' || state.mySlotId !== 'p1') return;
-      broadcastFromHost({
+      sendWs({
         type: 'world_state',
         snapshot: buildWorldSnapshot()
       });
@@ -1843,7 +1615,7 @@
     function hostStartOnlineGame() {
       beginCountdown();
       if (state.mode === 'online' && state.mySlotId === 'p1') {
-        broadcastFromHost({
+        sendWs({
           type: 'game_start',
           snapshot: buildWorldSnapshot()
         });
@@ -1875,8 +1647,8 @@
         if (state.paused || !state.gameStarted) return;
         const me = getMyChef();
         if (me) {
-          sendToHost({
-            type: 'guest_move',
+          sendWs({
+            type: 'player_move',
             slotId: state.mySlotId,
             x: me.x,
             y: me.y,
@@ -2244,8 +2016,8 @@
     function triggerActionForChef(chef) {
       if (!chef) return;
       if (state.mode === 'online' && state.mySlotId !== 'p1') {
-        sendToHost({
-          type: 'guest_action',
+        sendWs({
+          type: 'player_action',
           slotId: state.mySlotId,
           x: chef.x,
           y: chef.y,
@@ -2368,8 +2140,8 @@
           resolveChefCollisions();
           pushTrailPoint(state.mySlotId, myChef.x, myChef.y);
         }
-        sendToHost({
-          type: 'guest_action',
+        sendWs({
+          type: 'player_action',
           slotId: state.mySlotId,
           x: myChef.x,
           y: myChef.y,
@@ -2985,11 +2757,7 @@
       };
 
       if (state.mode === 'online') {
-        if (state.mySlotId === 'p1') {
-          broadcastFromHost({ type: 'game_over', result });
-        } else {
-          sendToHost({ type: 'request_finish_from_guest' });
-        }
+        sendWs({ type: 'game_over', result });
       }
       showSharedResultModal(result);
     }
@@ -3025,11 +2793,7 @@
 
     function handleReturnToReady() {
       if (state.mode === 'online') {
-        if (state.mySlotId === 'p1') {
-          broadcastFromHost({ type: 'return_to_lobby' });
-        } else {
-          sendToHost({ type: 'return_to_lobby' });
-        }
+        sendWs({ type: 'return_to_lobby' });
       }
       closeModal();
       resetToReadyLobby();
@@ -3037,11 +2801,11 @@
 
     function openHelpModal() {
       openModal(`
-        <h3 style="margin-top:0;">Crazy COOK V2.6 操作說明</h3>
+        <h3 style="margin-top:0;">Crazy COOK V2.7 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
           <li><strong>自選 2～4 人房間：</strong>在多人連線大廳選擇「2 人房 / 3 人房 / 4 人房」後建立房號，滿員且全員按「準備」後由房主按「開始營業！」。</li>
           <li><strong>圖示化製作流程：</strong>上方訂單卡已改用與下方食材相同的圖示呈現堆疊順序，依序把對應食材疊上組裝台並送到輸送帶出餐。</li>
-          <li><strong>多中繼穿透與自動重連：</strong>加入 TURN 中繼備援與連線看門狗自動重試，若第 3、4 台裝置短暫卡住會自動重連至同一準備室。</li>
+          <li><strong>Render WebSocket 同步：</strong>透過 WebSocket 房間中繼同步 2～4 人準備狀態、即時走位與軌跡，結算時全體同步顯示成績單。</li>
         </ol>
         <div style="text-align:right;margin-top:14px;">
           <button class="btn btn-mint" onclick="closeModal()">知道了</button>
