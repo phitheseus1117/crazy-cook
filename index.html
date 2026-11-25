@@ -726,6 +726,11 @@
               <button type="button" class="audio-mini-toggle" id="bgmMuteBtn" onclick="toggleBgmMute()">靜音</button>
             </div>
             <input type="range" min="0" max="100" value="35" class="audio-slider" id="bgmVolumeSlider" oninput="onBgmVolumeInput(this.value)" />
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px;">
+              <button type="button" class="audio-mini-toggle" id="bgmTrack0" style="background:#FEF08A;" onclick="selectBgmTrack(0)">復古搖擺</button>
+              <button type="button" class="audio-mini-toggle" id="bgmTrack1" onclick="selectBgmTrack(1)">海灘放克</button>
+              <button type="button" class="audio-mini-toggle" id="bgmTrack2" onclick="selectBgmTrack(2)">深夜合成</button>
+            </div>
           </div>
           <div class="audio-row">
             <div class="audio-row-head">
@@ -2414,10 +2419,17 @@
             playSfx('chop'); showToast(`油炸中（${st.friesProgress}/2）`);
           }
         } else if (st.item === 'fries' && !chef.holding) {
-          chef.holding = { kind: 'fries' };
-          st.item = null;
-          st.friesProgress = 0;
-          playSfx('pickup'); showToast(`${chef.tag} 端起金黃炸薯條，去輸送帶出餐！`);
+          if (state.mapId === 'beach') {
+            chef.holding = { kind: 'shaved_ice', sauce: null };
+            st.item = null;
+            st.friesProgress = 0;
+            playSfx('pickup'); showToast(`${chef.tag} 端起綿密刨冰，去刨冰擠醬台擠果醬！`);
+          } else {
+            chef.holding = { kind: 'fries' };
+            st.item = null;
+            st.friesProgress = 0;
+            playSfx('pickup'); showToast(`${chef.tag} 端起金黃炸薯條，去輸送帶出餐！`);
+          }
         }
       } else if (st.type === 'sauce_crate') {
         if (!chef.holding) {
@@ -2579,7 +2591,6 @@
       }
     }
 
-    // 需先走近台子／地上物品的可互動範圍（碰撞箱＋操作半徑）後，點擊才可互動，不再直接瞬移過去拿
     function isChefInStationReach(chef, st) {
       if (!chef || !st) return false;
       return distToRectEdge(chef.x, chef.y, st) <= (chef.radius + 18);
@@ -2757,76 +2768,88 @@
       lastFrameTime = now;
 
       if (!state.paused && !document.getElementById('screenGame').classList.contains('hidden')) {
-        const myChef = getMyChef();
-        let vx = 0;
-        let vy = 0;
-        if (state.keys['w'] || state.keys['arrowup'] || state.touchDir.up) vy -= 1;
-        if (state.keys['s'] || state.keys['arrowdown'] || state.touchDir.down) vy += 1;
-        if (state.keys['a'] || state.keys['arrowleft'] || state.touchDir.left) vx -= 1;
-        if (state.keys['d'] || state.keys['arrowright'] || state.touchDir.right) vx += 1;
-        moveSingleChef(myChef, vx, vy, dt);
+        try {
+          const myChef = getMyChef();
+          let vx = 0;
+          let vy = 0;
+          if (state.keys['w'] || state.keys['arrowup'] || state.touchDir.up) vy -= 1;
+          if (state.keys['s'] || state.keys['arrowdown'] || state.touchDir.down) vy += 1;
+          if (state.keys['a'] || state.keys['arrowleft'] || state.touchDir.left) vx -= 1;
+          if (state.keys['d'] || state.keys['arrowright'] || state.touchDir.right) vx += 1;
+          const isMovingNow = (vx !== 0 || vy !== 0);
+          moveSingleChef(myChef, vx, vy, dt);
 
-        resolveChefCollisions();
+          resolveChefCollisions();
 
-        if (myChef && (vx !== 0 || vy !== 0)) {
-          pushTrailPoint(myChef.id, myChef.x, myChef.y);
-        }
+          if (myChef && isMovingNow) {
+            pushTrailPoint(myChef.id, myChef.x, myChef.y);
+            audioState.stepSoundCooldown -= dt;
+            if (audioState.stepSoundCooldown <= 0) {
+              audioState.stepSoundCooldown = 0.22;
+              playSfx('step');
+            }
+          } else {
+            audioState.stepSoundCooldown = 0.04;
+          }
 
-        ['p1', 'p2', 'p3', 'p4'].forEach(key => {
-          if (!state.trails[key]) return;
-          state.trails[key].forEach(pt => { pt.life -= dt * 0.9; });
-          state.trails[key] = state.trails[key].filter(pt => pt.life > 0);
-        });
+          ['p1', 'p2', 'p3', 'p4'].forEach(key => {
+            if (!state.trails[key]) return;
+            state.trails[key].forEach(pt => { pt.life -= dt * 0.9; });
+            state.trails[key] = state.trails[key].filter(pt => pt.life > 0);
+          });
 
-        if (state.mySlotId === 'p1') {
-          for (const st of state.stations) {
-            if (st.type === 'grill' && st.meatStatus && st.meatStatus !== 'burnt_meat') {
-              if (st.meatStatus === 'raw_meat' || st.meatStatus === 'raw_hotdog') {
-                st.cookProgress = Math.min(100, st.cookProgress + dt * 25);
-                if (st.cookProgress >= 100) {
-                  st.meatStatus = st.meatStatus === 'raw_hotdog' ? 'cooked_hotdog' : 'patty';
-                  st.overcookSec = 0;
+          if (state.mySlotId === 'p1') {
+            for (const st of state.stations) {
+              if (st.type === 'grill' && st.meatStatus && st.meatStatus !== 'burnt_meat') {
+                if (st.meatStatus === 'raw_meat' || st.meatStatus === 'raw_hotdog') {
+                  st.cookProgress = Math.min(100, st.cookProgress + dt * 25);
+                  if (st.cookProgress >= 100) {
+                    st.meatStatus = st.meatStatus === 'raw_hotdog' ? 'cooked_hotdog' : 'patty';
+                    st.overcookSec = 0;
+                  }
+                } else if (st.meatStatus === 'patty' || st.meatStatus === 'cooked_hotdog') {
+                  st.overcookSec += dt;
+                  if (st.overcookSec >= 10) {
+                    st.meatStatus = 'burnt_meat';
+                  }
                 }
-              } else if (st.meatStatus === 'patty' || st.meatStatus === 'cooked_hotdog') {
-                st.overcookSec += dt;
-                if (st.overcookSec >= 10) {
-                  st.meatStatus = 'burnt_meat';
-                }
-              }
-            } else if (st.type === 'dispenser' && st.drinkStatus && st.drinkStatus !== 'burnt_cola') {
-              if (st.drinkStatus === 'filling') {
-                st.fillProgress = Math.min(100, st.fillProgress + dt * 45);
-                if (st.fillProgress >= 100) {
-                  st.drinkStatus = 'ready';
-                  st.overfillSec = 0;
-                }
-              } else if (st.drinkStatus === 'ready') {
-                st.overfillSec += dt;
-                if (st.overfillSec >= 12) {
-                  st.drinkStatus = 'burnt_cola';
+              } else if (st.type === 'dispenser' && st.drinkStatus && st.drinkStatus !== 'burnt_cola') {
+                if (st.drinkStatus === 'filling') {
+                  st.fillProgress = Math.min(100, st.fillProgress + dt * 45);
+                  if (st.fillProgress >= 100) {
+                    st.drinkStatus = 'ready';
+                    st.overfillSec = 0;
+                  }
+                } else if (st.drinkStatus === 'ready') {
+                  st.overfillSec += dt;
+                  if (st.overfillSec >= 12) {
+                    st.drinkStatus = 'burnt_cola';
+                  }
                 }
               }
             }
           }
-        }
 
-        state.particles = state.particles.filter(pt => {
-          pt.x += pt.vx * dt;
-          pt.y += pt.vy * dt;
-          pt.vy += 120 * dt;
-          pt.life -= dt;
-          return pt.life > 0;
-        });
+          state.particles = state.particles.filter(pt => {
+            pt.x += pt.vx * dt;
+            pt.y += pt.vy * dt;
+            pt.vy += 120 * dt;
+            pt.life -= dt;
+            return pt.life > 0;
+          });
 
-        if (state.beltFlashTimer > 0) {
-          state.beltFlashTimer = Math.max(0, state.beltFlashTimer - dt);
-        }
-        if (state.toastTimer > 0) {
-          state.toastTimer = Math.max(0, state.toastTimer - dt);
-          if (state.toastTimer === 0) updateHoldingHud();
-        }
+          if (state.beltFlashTimer > 0) {
+            state.beltFlashTimer = Math.max(0, state.beltFlashTimer - dt);
+          }
+          if (state.toastTimer > 0) {
+            state.toastTimer = Math.max(0, state.toastTimer - dt);
+            if (state.toastTimer === 0) updateHoldingHud();
+          }
 
-        drawKitchenCanvas(now / 1000);
+          drawKitchenCanvas(now / 1000);
+        } catch (err) {
+          console.error('gameLoop error:', err);
+        }
       }
 
       rafId = requestAnimationFrame(gameLoop);
@@ -3022,18 +3045,28 @@
         ctx.fillStyle = '#22C55E';
         ctx.fillRect(-9, -9.5, 18, 3);
       } else if (key === 'shaved_ice') {
-        ctx.fillStyle = '#E0F2FE';
+        ctx.fillStyle = '#F0F9FF';
         ctx.beginPath();
-        ctx.arc(0, -1, 8.5, Math.PI, 0);
+        ctx.arc(0, -1, 10.5, Math.PI, 0);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
+        ctx.strokeStyle = '#7DD3FC';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(-5, -5);
+        ctx.lineTo(2, -8);
+        ctx.moveTo(1, -4);
+        ctx.lineTo(6, -6);
+        ctx.stroke();
+        ctx.strokeStyle = '#1A1A1A';
+        ctx.lineWidth = 2;
         ctx.fillStyle = '#38BDF8';
         ctx.beginPath();
-        ctx.moveTo(-8, -1);
-        ctx.lineTo(8, -1);
-        ctx.lineTo(6, 9);
-        ctx.lineTo(-6, 9);
+        ctx.moveTo(-10, -1);
+        ctx.lineTo(10, -1);
+        ctx.lineTo(7.5, 9.5);
+        ctx.lineTo(-7.5, 9.5);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
@@ -3293,7 +3326,7 @@
         ctx.font = 'bold 11px sans-serif';
         ctx.fillStyle = '#1A1A1A';
         ctx.textAlign = 'center';
-        const lbl = fi.payload.kind === 'single' ? ITEM_LABELS[fi.payload.item] : (fi.payload.kind === 'fries' ? '炸薯條' : (fi.payload.kind === 'cola' ? '冰涼可樂' : (fi.payload.kind === 'watermelon' ? '冰涼西瓜汁' : (fi.payload.kind === 'shaved_ice' ? '夏日刨冰' : (fi.payload.kind === 'hotdog' ? '海灘熱狗堡' : `漢堡(${fi.payload.items.length}層)`)))));
+        const lbl = fi.payload.kind === 'single' ? ITEM_LABELS[fi.payload.item] : (fi.payload.kind === 'fries' ? '炸薯條' : (fi.payload.kind === 'cola' ? '冰涼可樂' : `漢堡(${fi.payload.items.length}層)`));
         ctx.fillText(lbl, fi.x, fi.y + 23);
         ctx.restore();
       }
@@ -3457,7 +3490,7 @@
             drawItemMini(ctx, 'frozen_fries', st.x + st.w / 2, st.y + 45, 1.05);
             ctx.fillText(`刨冰 ${st.friesProgress}/2`, st.x + st.w / 2, st.y + 78);
           } else {
-            drawItemMini(ctx, 'fries', st.x + st.w / 2, st.y + 45, 1.08);
+            drawItemMini(ctx, state.mapId === 'beach' ? 'shaved_ice' : 'fries', st.x + st.w / 2, st.y + 45, 1.08);
             ctx.fillStyle = '#15803D';
             ctx.fillText('炸好可端走', st.x + st.w / 2, st.y + 78);
           }
@@ -3622,8 +3655,6 @@
 
     document.getElementById('kitchenCanvas').addEventListener('click', handleCanvasClick);
 
-
-    // === 內建 Web Audio 雙聲道音效引擎（背景音樂 BGM ＋ 互動音效 SFX） ===
     const audioState = {
       ctx: null,
       bgmGain: null,
@@ -3632,23 +3663,48 @@
       sfxVolume: Number(localStorage.getItem('crazyCookSfxVol') ?? 75),
       bgmMuted: localStorage.getItem('crazyCookBgmMuted') === '1',
       sfxMuted: localStorage.getItem('crazyCookSfxMuted') === '1',
+      bgmTrack: Number(localStorage.getItem('crazyCookBgmTrack') ?? 0),
       bgmTimer: null,
-      bgmStep: 0
+      bgmStep: 0,
+      stepSoundCooldown: 0
     };
 
-    // 輕快 16 步循環旋律（C大調 -> F大調 -> G大調 -> C大調，柔和不緊繃）
-    const BGM_BASS_NOTES = [
-      130.81, 0, 196.00, 0,
-      174.61, 0, 220.00, 0,
-      196.00, 0, 246.94, 0,
-      130.81, 0, 196.00, 0
+    const BGM_TRACKS = [
+      {
+        tempoMs: 310,
+        bassWave: 'sine',
+        leadWave: 'triangle',
+        bass: [130.81, 0, 196.00, 0, 174.61, 0, 220.00, 0, 196.00, 0, 246.94, 0, 130.81, 0, 196.00, 0],
+        lead: [523.25, 659.25, 783.99, 659.25, 698.46, 587.33, 659.25, 523.25, 587.33, 783.99, 880.00, 783.99, 659.25, 587.33, 523.25, 0]
+      },
+      {
+        tempoMs: 250,
+        bassWave: 'triangle',
+        leadWave: 'sine',
+        bass: [146.83, 0, 146.83, 220.00, 164.81, 0, 164.81, 246.94, 196.00, 0, 196.00, 293.66, 220.00, 0, 164.81, 0],
+        lead: [587.33, 0, 739.99, 880.00, 659.25, 0, 880.00, 987.77, 783.99, 0, 587.33, 739.99, 659.25, 587.33, 493.88, 0]
+      },
+      {
+        tempoMs: 340,
+        bassWave: 'sine',
+        leadWave: 'square',
+        bass: [110.00, 110.00, 0, 110.00, 87.31, 87.31, 0, 87.31, 98.00, 98.00, 0, 98.00, 123.47, 0, 110.00, 0],
+        lead: [440.00, 0, 659.25, 587.33, 523.25, 0, 392.00, 440.00, 493.88, 0, 783.99, 659.25, 587.33, 493.88, 440.00, 0]
+      }
     ];
-    const BGM_LEAD_NOTES = [
-      523.25, 659.25, 783.99, 659.25,
-      698.46, 587.33, 659.25, 523.25,
-      587.33, 783.99, 880.00, 783.99,
-      659.25, 587.33, 523.25, 0
-    ];
+
+    function selectBgmTrack(trackIdx) {
+      ensureAudioContext();
+      audioState.bgmTrack = trackIdx % BGM_TRACKS.length;
+      audioState.bgmStep = 0;
+      localStorage.setItem('crazyCookBgmTrack', String(audioState.bgmTrack));
+      if (audioState.bgmTimer) {
+        clearInterval(audioState.bgmTimer);
+        audioState.bgmTimer = null;
+      }
+      startBgmLoopIfNeeded();
+      applyAudioVolumes();
+    }
 
     function ensureAudioContext() {
       if (!audioState.ctx) {
@@ -3705,49 +3761,53 @@
         const allOff = (audioState.bgmMuted || audioState.bgmVolume === 0) && (audioState.sfxMuted || audioState.sfxVolume === 0);
         noteBtn.style.opacity = allOff ? '0.6' : '1';
       }
+      for (let i = 0; i < 3; i++) {
+        const tBtn = document.getElementById('bgmTrack' + i);
+        if (tBtn) tBtn.style.background = (audioState.bgmTrack === i) ? '#FEF08A' : '#FFF';
+      }
     }
 
     function startBgmLoopIfNeeded() {
       if (audioState.bgmTimer || !audioState.ctx || !audioState.bgmGain) return;
+      const trk = BGM_TRACKS[audioState.bgmTrack] || BGM_TRACKS[0];
       audioState.bgmTimer = setInterval(() => {
         if (!audioState.ctx || audioState.ctx.state !== 'running' || state.paused) return;
+        const activeTrk = BGM_TRACKS[audioState.bgmTrack] || BGM_TRACKS[0];
         const now = audioState.ctx.currentTime;
-        const idx = audioState.bgmStep % BGM_LEAD_NOTES.length;
+        const idx = audioState.bgmStep % activeTrk.lead.length;
 
-        // 柔和輕快的低音點綴（每兩拍一次，降低緊迫感）
-        const bassFreq = BGM_BASS_NOTES[idx];
+        const bassFreq = activeTrk.bass[idx];
         if (bassFreq > 0) {
           const bassOsc = audioState.ctx.createOscillator();
           const bassEnv = audioState.ctx.createGain();
-          bassOsc.type = 'sine';
+          bassOsc.type = activeTrk.bassWave;
           bassOsc.frequency.setValueAtTime(bassFreq, now);
           bassEnv.gain.setValueAtTime(0.001, now);
-          bassEnv.gain.linearRampToValueAtTime(0.24, now + 0.03);
-          bassEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+          bassEnv.gain.linearRampToValueAtTime(0.22, now + 0.03);
+          bassEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
           bassOsc.connect(bassEnv);
           bassEnv.connect(audioState.bgmGain);
           bassOsc.start(now);
-          bassOsc.stop(now + 0.36);
+          bassOsc.stop(now + 0.34);
         }
 
-        // 16 步變化旋律，聽感明亮輕快不單調
-        const leadFreq = BGM_LEAD_NOTES[idx];
+        const leadFreq = activeTrk.lead[idx];
         if (leadFreq > 0) {
           const leadOsc = audioState.ctx.createOscillator();
           const leadEnv = audioState.ctx.createGain();
-          leadOsc.type = 'triangle';
+          leadOsc.type = activeTrk.leadWave;
           leadOsc.frequency.setValueAtTime(leadFreq, now);
           leadEnv.gain.setValueAtTime(0.001, now);
-          leadEnv.gain.linearRampToValueAtTime(0.2, now + 0.02);
-          leadEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+          leadEnv.gain.linearRampToValueAtTime(activeTrk.leadWave === 'square' ? 0.11 : 0.2, now + 0.02);
+          leadEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
           leadOsc.connect(leadEnv);
           leadEnv.connect(audioState.bgmGain);
           leadOsc.start(now);
-          leadOsc.stop(now + 0.26);
+          leadOsc.stop(now + 0.24);
         }
 
         audioState.bgmStep += 1;
-      }, 310);
+      }, trk.tempoMs);
     }
 
     function playSfx(type) {
@@ -3792,6 +3852,9 @@
       } else if (type === 'serveFail') {
         makeTone(240, 140, 0.18, 'sawtooth', 0.26, 0);
         makeTone(170, 110, 0.2, 'sawtooth', 0.24, 0.12);
+      } else if (type === 'step') {
+        const stepPitch = (audioState.bgmStep % 2 === 0) ? 165 : 190;
+        makeTone(stepPitch, 95, 0.055, 'triangle', 0.22);
       } else {
         makeTone(480, 520, 0.05, 'sine', 0.2);
       }
