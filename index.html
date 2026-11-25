@@ -609,7 +609,7 @@
       <div class="signboard">
         <div class="signboard-tag">★ EST. 1955 · ROUTE 66 DINER ★</div>
         <h1>Crazy COOK</h1>
-        <p style="margin:6px 0 0;font-weight:700;">美式快餐大作戰 · 2～4 人多中繼穿透自動重連 ＋ 圖示化製作流程！</p>
+        <p style="margin:6px 0 0;font-weight:700;">美式快餐大作戰 · 2～4 人即時聯機 ＋ 炸薯條與冰涼可樂套餐！</p>
       </div>
 
       <div class="name-row">
@@ -671,7 +671,7 @@
               <span class="status-pill" style="background:var(--diner-red);color:#FFF;">2 - 4 PLAYERS</span>
             </div>
             <h2 style="margin:0 0 8px;font-size:1.45rem;">多人房號連線（2～4 人）</h2>
-            <p style="margin:0;font-weight:700;line-height:1.5;">支援 2～4 人自選人數開房，內建多組 TURN/STUN 穿透與自動重試交握機制，穩定將 3、4 人連入同一準備室！</p>
+            <p style="margin:0;font-weight:700;line-height:1.5;">支援 2～4 人自選人數開房，透過 Render WebSocket 同步房間準備、即時走位與出餐狀態。</p>
           </div>
           <button class="btn btn-yellow" onclick="openRoomSelect()">選擇人數 / 創立或加入房號 →</button>
         </div>
@@ -700,7 +700,7 @@
 
         <div class="card">
           <h3 style="margin-top:0;">2. 輸入 4 碼房間號加入</h3>
-          <p style="font-weight:700;color:#444;">直接輸入房主畫面上的 4 碼房號即可加入該房間（內建自動重連與 TURN 中繼備援）。</p>
+          <p style="font-weight:700;color:#444;">直接輸入房主畫面上的 4 碼房號即可加入該房間。</p>
           <input id="joinCodeInput" class="code-input" type="text" inputmode="numeric" maxlength="4" placeholder="輸入 4 碼房號" />
           <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
             <button class="btn btn-blue" style="flex:1;" id="joinRoomBtn" onclick="joinOnlineRoom()">連線加入房間</button>
@@ -857,6 +857,7 @@
     let netTickTimer = null;
     let pendingIntent = null;
 
+    // 支援單點或套餐組合：漢堡組裝台端起（burger）、油炸機端起（fries）、飲料機端起（cola）
     const RECIPES = [
       { id: 'classic_burger', name: '經典美式起司堡', price: 120, requiredParts: [{ kind: 'burger', items: ['bun', 'patty', 'cheese', 'bun'] }] },
       { id: 'veggie_burger', name: '田園鮮蔬堡', price: 110, requiredParts: [{ kind: 'burger', items: ['bun', 'lettuce', 'tomato', 'bun'] }] },
@@ -1466,13 +1467,11 @@
 
     function setupKitchen() {
       state.stations = [
-        { id: 'crate_bun', type: 'crate', item: 'bun', label: '麵包', x: 148, y: 20, w: 84, h: 66 },
-        { id: 'crate_meat', type: 'crate', item: 'raw_meat', label: '生肉排', x: 240, y: 20, w: 84, h: 66 },
-        { id: 'crate_bacon', type: 'crate', item: 'raw_bacon', label: '生培根', x: 332, y: 20, w: 84, h: 66 },
-        { id: 'crate_lettuce', type: 'crate', item: 'raw_lettuce', label: '生菜', x: 424, y: 20, w: 84, h: 66 },
-        { id: 'crate_onion', type: 'crate', item: 'raw_onion', label: '洋蔥', x: 516, y: 20, w: 84, h: 66 },
-        { id: 'crate_cheese', type: 'crate', item: 'cheese', label: '起司', x: 608, y: 20, w: 84, h: 66 },
-        { id: 'crate_tomato', type: 'crate', item: 'tomato', label: '番茄', x: 700, y: 20, w: 84, h: 66 },
+        { id: 'crate_bun', type: 'crate', item: 'bun', label: '麵包', x: 165, y: 20, w: 96, h: 66 },
+        { id: 'crate_meat', type: 'crate', item: 'raw_meat', label: '生肉排', x: 273, y: 20, w: 96, h: 66 },
+        { id: 'crate_lettuce', type: 'crate', item: 'raw_lettuce', label: '生菜', x: 381, y: 20, w: 96, h: 66 },
+        { id: 'crate_cheese', type: 'crate', item: 'cheese', label: '起司', x: 489, y: 20, w: 96, h: 66 },
+        { id: 'crate_tomato', type: 'crate', item: 'tomato', label: '番茄', x: 597, y: 20, w: 96, h: 66 },
 
         { id: 'grill_1', type: 'grill', label: '煎台 #1', x: 24, y: 112, w: 114, h: 84, meatStatus: null, cookProgress: 0, overcookSec: 0 },
         { id: 'grill_2', type: 'grill', label: '煎台 #2', x: 24, y: 204, w: 114, h: 84, meatStatus: null, cookProgress: 0, overcookSec: 0 },
@@ -3010,9 +3009,9 @@
       openModal(`
         <h3 style="margin-top:0;">Crazy COOK V2.9 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
-          <li><strong>自選 2～4 人房間：</strong>在多人連線大廳選擇「2 人房 / 3 人房 / 4 人房」後建立房號，滿員且全員按「準備」後由房主按「開始營業！」。</li>
-          <li><strong>圖示化製作流程：</strong>上方訂單卡已改用與下方食材相同的圖示呈現堆疊順序，依序把對應食材疊上組裝台並送到輸送帶出餐。</li>
-          <li><strong>Render WebSocket 同步：</strong>透過 WebSocket 房間中繼同步 2～4 人準備狀態、即時走位與軌跡，結算時全體同步顯示成績單。</li>
+          <li><strong>120 秒挑戰：</strong>單局時間為 120 秒（<code>2:00</code>），支援 2～4 人透過 Render WebSocket 同步遊玩。</li>
+          <li><strong>炸薯條與冰涼可樂：</strong>從「冷凍櫃」拿薯條到「油炸機」炸 2 下完成；或點擊「飲料機」等裝填完成後端可樂，再送去「送餐輸送帶」出餐。</li>
+          <li><strong>單點與套餐組合：</strong>訂單會以圖示顯示單點或套餐組合，依序把對應餐點送到輸送帶即可完成。</li>
         </ol>
         <div style="text-align:right;margin-top:14px;">
           <button class="btn btn-mint" onclick="closeModal()">知道了</button>
