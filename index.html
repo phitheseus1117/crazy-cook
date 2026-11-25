@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crazy COOK — 美式復古快餐廚房 V2.7（Render WebSocket 即時聯機）</title>
-    <style>
+  <title>Crazy COOK — 美式復古快餐廚房 V2.9（120 分鐘馬拉松 × 炸薯條與可樂套餐）</title>
+  <style>
     :root {
       --bg-cream: #FFF8E7;
       --ink: #1A1A1A;
@@ -594,7 +594,7 @@
     <div class="brand-badge">
       <span class="brand-icon-box" id="topLogoIcon"></span>
       <span>CRAZY COOK</span>
-      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V2.7</span>
+      <span style="font-size:0.75rem;background:var(--ink);color:var(--mustard);padding:2px 8px;border-radius:999px;">1950s DINER · V2.9</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-light" onclick="openHelpModal()">玩法與操作說明</button>
@@ -754,7 +754,7 @@
       <div class="hud-bar">
         <div class="hud-box">
           <div class="hud-label">剩餘時間</div>
-          <div class="hud-val" id="hudTime">90s</div>
+          <div class="hud-val" id="hudTime">120:00</div>
         </div>
         <div class="hud-box">
           <div class="hud-label">營業額</div>
@@ -814,7 +814,6 @@
   </div>
 
   <script>
-    // 請將下方網址替換為你在 Render 部署後拿到的 wss:// 網址（例如 wss://crazy-cook-ws.onrender.com）
     const WS_SERVER_URL = 'wss://crazy-cook-ws-server.onrender.com';
 
     const state = {
@@ -830,7 +829,7 @@
       roomCode: null,
       connected: false,
       players: [],
-      timeLeft: 90,
+      timeLeft: 7200,
       score: 0,
       bestScore: Number(localStorage.getItem('crazyCookBestScore') || 0),
       combo: 1,
@@ -856,12 +855,16 @@
 
     let wsSocket = null;
     let netTickTimer = null;
-    let pendingIntent = null; // { action: 'create' | 'join', code }
+    let pendingIntent = null;
 
     const RECIPES = [
-      { id: 'classic', name: '經典美式起司堡', price: 120, items: ['bun', 'patty', 'cheese', 'bun'] },
-      { id: 'veggie', name: '田園鮮蔬堡', price: 110, items: ['bun', 'lettuce', 'tomato', 'bun'] },
-      { id: 'deluxe', name: '美式總匯滿漢堡', price: 180, items: ['bun', 'patty', 'cheese', 'lettuce', 'tomato', 'bun'] }
+      { id: 'classic_burger', name: '經典美式起司堡', price: 120, requiredParts: [{ kind: 'burger', items: ['bun', 'patty', 'cheese', 'bun'] }] },
+      { id: 'veggie_burger', name: '田園鮮蔬堡', price: 110, requiredParts: [{ kind: 'burger', items: ['bun', 'lettuce', 'tomato', 'bun'] }] },
+      { id: 'solo_fries', name: '黃金酥脆炸薯條', price: 90, requiredParts: [{ kind: 'fries' }] },
+      { id: 'solo_cola', name: '冰涼美式可樂', price: 75, requiredParts: [{ kind: 'cola' }] },
+      { id: 'combo_classic', name: '經典堡＋薯條套餐', price: 210, requiredParts: [{ kind: 'burger', items: ['bun', 'patty', 'cheese', 'bun'] }, { kind: 'fries' }] },
+      { id: 'combo_full', name: '美式豪華全餐', price: 285, requiredParts: [{ kind: 'burger', items: ['bun', 'patty', 'cheese', 'lettuce', 'tomato', 'bun'] }, { kind: 'fries' }, { kind: 'cola' }] },
+      { id: 'combo_snack', name: '薯條＋可樂午茶組', price: 165, requiredParts: [{ kind: 'fries' }, { kind: 'cola' }] }
     ];
 
     const ITEM_LABELS = {
@@ -872,7 +875,12 @@
       raw_lettuce: '整顆生菜',
       lettuce: '切絲生菜',
       cheese: '起司片',
-      tomato: '番茄片'
+      tomato: '番茄片',
+      frozen_fries: '冷凍薯條',
+      fries: '金黃炸薯條',
+      burnt_fries: '焦黑薯條',
+      cola: '冰涼可樂',
+      burnt_cola: '溢出變質可樂'
     };
 
     const SKIN_COLORS = {
@@ -894,6 +902,13 @@
     };
 
     const SLOT_COLORS = ['#2563EB', '#0D9488', '#D97706', '#9333EA'];
+
+    function formatDurationClock(sec) {
+      const safe = Math.max(0, Math.floor(sec));
+      const mins = Math.floor(safe / 60);
+      const rem = safe % 60;
+      return `${mins}:${String(rem).padStart(2, '0')}`;
+    }
 
     function svgIngredientMini(key, size = 22) {
       if (key === 'bun') {
@@ -925,6 +940,20 @@
         return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
           <circle cx="14" cy="15" r="8.8" fill="#EF4444" stroke="#1A1A1A" stroke-width="2.2"/>
           <path d="M14 5V8.5M11 7.5L14 8.5L17 7.5" stroke="#16A34A" stroke-width="2" stroke-linecap="round"/>
+        </svg>`;
+      }
+      if (key === 'frozen_fries' || key === 'fries') {
+        const isFries = key === 'fries';
+        return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
+          <path d="M8 6L10 13M13 5L14 13M18 6L16.5 13" stroke="${isFries ? '#FACC15' : '#93C5FD'}" stroke-width="2.6" stroke-linecap="round"/>
+          <polygon points="6,12 22,12 19.5,24 8.5,24" fill="${isFries ? '#E63946' : '#60A5FA'}" stroke="#1A1A1A" stroke-width="2"/>
+        </svg>`;
+      }
+      if (key === 'cola') {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none">
+          <polygon points="7,6 21,6 18.5,24 9.5,24" fill="#451A03" stroke="#1A1A1A" stroke-width="2.2"/>
+          <line x1="6" y1="6" x2="22" y2="6" stroke="#EF4444" stroke-width="3" stroke-linecap="round"/>
+          <path d="M15 6L17.5 3" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round"/>
         </svg>`;
       }
       return '';
@@ -1443,16 +1472,17 @@
         { id: 'crate_cheese', type: 'crate', item: 'cheese', label: '起司', x: 489, y: 20, w: 96, h: 66 },
         { id: 'crate_tomato', type: 'crate', item: 'tomato', label: '番茄', x: 597, y: 20, w: 96, h: 66 },
 
-        { id: 'grill_1', type: 'grill', label: '煎台 #1', x: 24, y: 120, w: 114, h: 94, meatStatus: null, cookProgress: 0, overcookSec: 0 },
-        { id: 'grill_2', type: 'grill', label: '煎台 #2', x: 24, y: 228, w: 114, h: 94, meatStatus: null, cookProgress: 0, overcookSec: 0 },
-        { id: 'board_1', type: 'board', label: '切菜砧板', x: 24, y: 344, w: 114, h: 98, item: null, chops: 0 },
+        { id: 'grill_1', type: 'grill', label: '煎台 #1', x: 24, y: 112, w: 114, h: 84, meatStatus: null, cookProgress: 0, overcookSec: 0 },
+        { id: 'grill_2', type: 'grill', label: '煎台 #2', x: 24, y: 204, w: 114, h: 84, meatStatus: null, cookProgress: 0, overcookSec: 0 },
+        { id: 'board_1', type: 'board', label: '切菜砧板', x: 24, y: 296, w: 114, h: 84, item: null, chops: 0 },
+        { id: 'fryer_1', type: 'fryer', label: '油炸機', x: 24, y: 388, w: 114, h: 98, item: null, friesProgress: 0 },
 
         { id: 'assembly_1', type: 'assembly', label: '漢堡組裝台 A', x: 342, y: 172, w: 128, h: 98, stack: [] },
         { id: 'assembly_2', type: 'assembly', label: '漢堡組裝台 B', x: 492, y: 172, w: 128, h: 98, stack: [] },
 
-        { id: 'counter_1', type: 'counter', label: '置物檯面', x: 342, y: 365, w: 114, h: 82, item: null },
-        { id: 'counter_2', type: 'counter', label: '置物檯面', x: 474, y: 365, w: 114, h: 82, item: null },
-        { id: 'counter_3', type: 'counter', label: '置物檯面', x: 606, y: 365, w: 114, h: 82, item: null },
+        { id: 'freezer_1', type: 'freezer', label: '冷凍櫃', x: 312, y: 365, w: 120, h: 84 },
+        { id: 'dispenser_1', type: 'dispenser', label: '飲料機 #1', x: 446, y: 365, w: 120, h: 84, drinkStatus: null, fillProgress: 0, overfillSec: 0 },
+        { id: 'dispenser_2', type: 'dispenser', label: '飲料機 #2', x: 580, y: 365, w: 120, h: 84, drinkStatus: null, fillProgress: 0, overfillSec: 0 },
 
         { id: 'conveyor', type: 'conveyor', label: '送餐輸送帶', x: 820, y: 128, w: 116, h: 214 },
         { id: 'trash', type: 'trash', label: '垃圾桶', x: 820, y: 364, w: 116, h: 92 }
@@ -1534,6 +1564,8 @@
       if (!h) return '空手';
       if (h.kind === 'single') return ITEM_LABELS[h.item] || h.item;
       if (h.kind === 'burger') return `漢堡（${h.items.length}層）`;
+      if (h.kind === 'fries') return '金黃炸薯條';
+      if (h.kind === 'cola') return '冰涼可樂';
       return '空手';
     }
 
@@ -1623,7 +1655,7 @@
     }
 
     function startGuestGameFromHost(snap) {
-      state.timeLeft = snap.timeLeft || 105;
+      state.timeLeft = snap.timeLeft || 7200;
       state.score = 0;
       state.combo = 1;
       state.maxCombo = 1;
@@ -1663,7 +1695,7 @@
     }
 
     function beginCountdown() {
-      state.timeLeft = state.mode === 'online' ? 105 : 90;
+      state.timeLeft = 7200;
       state.score = 0;
       state.combo = 1;
       state.maxCombo = 1;
@@ -1727,7 +1759,7 @@
         uid: Date.now() + Math.random(),
         name: tpl.name,
         price: tpl.price,
-        items: [...tpl.items],
+        requiredParts: tpl.requiredParts.map(p => ({ ...p, items: p.items ? [...p.items] : undefined })),
         rem: 60,
         maxRem: 60
       };
@@ -1745,7 +1777,7 @@
     }
 
     function renderHud() {
-      document.getElementById('hudTime').textContent = `${state.timeLeft}s`;
+      document.getElementById('hudTime').textContent = formatDurationClock(state.timeLeft);
       document.getElementById('hudScore').textContent = state.score;
       document.getElementById('hudCombo').textContent = state.combo;
       document.getElementById('hudOrders').textContent = state.servedCount;
@@ -1756,9 +1788,24 @@
       strip.innerHTML = '';
       state.orders.forEach(o => {
         const pct = Math.max(0, Math.min(100, (o.rem / o.maxRem) * 100));
-        const flowHtml = o.items.map((k, idx) => {
-          const arrow = idx < o.items.length - 1 ? `<span class="flow-arrow">→</span>` : '';
-          return `<span class="flow-step-chip" title="${ITEM_LABELS[k] || k}">${svgIngredientMini(k, 22)}</span>${arrow}`;
+        const partsHtml = (o.requiredParts || []).map((part, pIdx) => {
+          let innerIcons = '';
+          if (part.kind === 'burger') {
+            innerIcons = part.items.map((k, idx) => {
+              const arrow = idx < part.items.length - 1 ? `<span class="flow-arrow">→</span>` : '';
+              return `<span class="flow-step-chip" title="${ITEM_LABELS[k] || k}">${svgIngredientMini(k, 20)}</span>${arrow}`;
+            }).join('');
+          } else if (part.kind === 'fries') {
+            innerIcons = `
+              <span class="flow-step-chip" title="冷凍薯條">${svgIngredientMini('frozen_fries', 20)}</span>
+              <span class="flow-arrow">→</span>
+              <span class="flow-step-chip" title="金黃炸薯條">${svgIngredientMini('fries', 20)}</span>
+            `;
+          } else if (part.kind === 'cola') {
+            innerIcons = `<span class="flow-step-chip" title="冰涼可樂">${svgIngredientMini('cola', 20)}</span>`;
+          }
+          const sep = pIdx < o.requiredParts.length - 1 ? `<span class="flow-arrow" style="color:#E63946;margin:0 2px;">＋</span>` : '';
+          return `<span style="display:inline-flex;align-items:center;gap:2px;">${innerIcons}</span>${sep}`;
         }).join('');
 
         const card = document.createElement('div');
@@ -1768,7 +1815,7 @@
             <span>${o.name}</span>
             <span style="color:var(--mint);">$${o.price}</span>
           </div>
-          <div class="recipe-flow-icons">${flowHtml}</div>
+          <div class="recipe-flow-icons">${partsHtml}</div>
           <div style="font-size:0.74rem;font-weight:800;margin-top:5px;">剩餘 ${o.rem}s</div>
           <div class="order-time-bar"><div class="order-time-fill" style="width:${pct}%;"></div></div>
         `;
@@ -1894,7 +1941,7 @@
         y: gy,
         payload: JSON.parse(JSON.stringify(chef.holding))
       });
-      const label = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : '漢堡';
+      const label = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : (chef.holding.kind === 'fries' ? '金黃炸薯條' : (chef.holding.kind === 'cola' ? '冰涼可樂' : '漢堡'));
       spawnBurstParticles(gx, gy, '#FBBF24', 6);
       chef.holding = null;
       showToast(`${chef.tag} 將「${label}」丟在地上`);
@@ -2000,12 +2047,65 @@
           spawnBurstParticles(scx, scy, '#EF4444', 6);
           showToast(`${chef.tag} 已丟進垃圾桶`);
         }
+      } else if (st.type === 'freezer') {
+        if (!chef.holding) {
+          chef.holding = { kind: 'single', item: 'frozen_fries' };
+          spawnBurstParticles(scx, scy, '#60A5FA', 5);
+          showToast(`${chef.tag} 從冷凍櫃拿出冷凍薯條，去油炸機炸熟！`);
+        } else {
+          showToast(`${chef.tag} 手上已有物品`);
+        }
+      } else if (st.type === 'fryer') {
+        if (!st.item && chef.holding && chef.holding.kind === 'single' && chef.holding.item === 'frozen_fries') {
+          st.item = 'frozen_fries';
+          st.friesProgress = 0;
+          chef.holding = null;
+          spawnBurstParticles(scx, scy, '#FACC15', 6);
+          showToast(`${chef.tag} 將冷凍薯條放進油炸機`);
+        } else if (st.item === 'frozen_fries' && !chef.holding) {
+          st.friesProgress += 1;
+          spawnBurstParticles(scx, scy, '#FACC15', 6);
+          if (st.friesProgress >= 2) {
+            st.item = 'fries';
+            showToast('炸薯條完成了！可端去輸送帶出餐');
+          } else {
+            showToast(`油炸中（${st.friesProgress}/2）`);
+          }
+        } else if (st.item === 'fries' && !chef.holding) {
+          chef.holding = { kind: 'fries' };
+          st.item = null;
+          st.friesProgress = 0;
+          showToast(`${chef.tag} 端起金黃炸薯條，去輸送帶出餐！`);
+        }
+      } else if (st.type === 'dispenser') {
+        if (!st.drinkStatus && !chef.holding) {
+          st.drinkStatus = 'filling';
+          st.fillProgress = 0;
+          st.overfillSec = 0;
+          spawnBurstParticles(scx, scy, '#38BDF8', 5);
+          showToast(`${chef.tag} 啟動 ${st.label} 裝可樂中...`);
+        } else if (st.drinkStatus === 'ready' || st.drinkStatus === 'burnt_cola') {
+          if (!chef.holding) {
+            if (st.drinkStatus === 'ready') {
+              chef.holding = { kind: 'cola' };
+              showToast(`${chef.tag} 端起冰涼可樂，去輸送帶出餐！`);
+            } else {
+              chef.holding = { kind: 'single', item: 'burnt_cola' };
+              showToast(`${chef.tag} 拿起變質可樂，請丟垃圾桶`);
+            }
+            st.drinkStatus = null;
+            st.fillProgress = 0;
+            st.overfillSec = 0;
+          } else {
+            showToast(`${chef.tag} 手上已有物品`);
+          }
+        }
       } else if (st.type === 'conveyor') {
-        if (chef.holding && chef.holding.kind === 'burger' && chef.holding.items.length > 0) {
-          serveBurgerItems(chef.holding.items, scx, scy);
+        if (chef.holding && chef.holding.kind !== 'single') {
+          serveHoldingToConveyor(chef.holding, scx, scy);
           chef.holding = null;
         } else {
-          showToast('請先端起疊好的漢堡再放到輸送帶');
+          showToast('請先端起漢堡、炸薯條或冰涼可樂再放到輸送帶');
         }
       }
 
@@ -2037,7 +2137,7 @@
         if (fl) {
           chef.holding = JSON.parse(JSON.stringify(fl.payload));
           state.floorItems = state.floorItems.filter(item => item.id !== fl.id);
-          const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : '漢堡';
+          const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : (chef.holding.kind === 'fries' ? '金黃炸薯條' : (chef.holding.kind === 'cola' ? '冰涼可樂' : '漢堡'));
           showToast(`${chef.tag} 撿起地上的「${name}」`);
           updateHoldingHud();
           sendWorldStateToGuests();
@@ -2066,7 +2166,7 @@
             payload: previousHolding
           });
         }
-        const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : '漢堡';
+        const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : (chef.holding.kind === 'fries' ? '金黃炸薯條' : (chef.holding.kind === 'cola' ? '冰涼可樂' : '漢堡'));
         spawnBurstParticles(clickedFloor.x, clickedFloor.y, '#38BDF8', 6);
         showToast(`${chef.tag} 從地上撿起「${name}」`);
         updateHoldingHud();
@@ -2111,7 +2211,7 @@
       if (nearFloor && !chef.holding) {
         chef.holding = JSON.parse(JSON.stringify(nearFloor.payload));
         state.floorItems = state.floorItems.filter(item => item.id !== nearFloor.id);
-        const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : '漢堡';
+        const name = chef.holding.kind === 'single' ? ITEM_LABELS[chef.holding.item] : (chef.holding.kind === 'fries' ? '金黃炸薯條' : (chef.holding.kind === 'cola' ? '冰涼可樂' : '漢堡'));
         showToast(`${chef.tag} 撿起地上的「${name}」`);
       }
       updateHoldingHud();
@@ -2154,30 +2254,46 @@
       handlePointerActionForChef(myChef, clickX, clickY);
     }
 
-    function serveBurgerItems(items, fx, fy) {
-      const matchIdx = state.orders.findIndex(o =>
-        o.items.length === items.length &&
-        o.items.every((k, idx) => k === items[idx])
+    function partMatchesHolding(part, holding) {
+      if (!part || !holding) return false;
+      if (part.kind === 'fries' && holding.kind === 'fries') return true;
+      if (part.kind === 'cola' && holding.kind === 'cola') return true;
+      if (part.kind === 'burger' && holding.kind === 'burger') {
+        return part.items.length === holding.items.length &&
+          part.items.every((k, idx) => k === holding.items[idx]);
+      }
+      return false;
+    }
+
+    function serveHoldingToConveyor(holding, fx, fy) {
+      state.beltFlashTimer = 0.7;
+      const orderIdx = state.orders.findIndex(o =>
+        (o.requiredParts || []).some(p => partMatchesHolding(p, holding))
       );
 
-      state.beltFlashTimer = 0.7;
+      if (orderIdx !== -1) {
+        const order = state.orders[orderIdx];
+        const partIdx = order.requiredParts.findIndex(p => partMatchesHolding(p, holding));
+        order.requiredParts.splice(partIdx, 1);
+        spawnBurstParticles(fx, fy, '#22C55E', 12);
 
-      if (matchIdx !== -1) {
-        const matched = state.orders[matchIdx];
-        state.orders.splice(matchIdx, 1);
-        const coopMult = state.mode === 'online' ? 1.15 : 1;
-        const bonus = Math.round(matched.price * (1 + (state.combo - 1) * 0.25) * coopMult);
-        state.score += bonus;
-        state.combo += 1;
-        state.maxCombo = Math.max(state.maxCombo, state.combo);
-        state.servedCount += 1;
-        if (!state.orders.length) state.orders.push(generateOrder());
-        spawnBurstParticles(fx, fy, '#22C55E', 14);
-        showToast(`出餐成功 +$${bonus}！`);
+        if (order.requiredParts.length === 0) {
+          state.orders.splice(orderIdx, 1);
+          const coopMult = state.mode === 'online' ? 1.15 : 1;
+          const bonus = Math.round(order.price * (1 + (state.combo - 1) * 0.25) * coopMult);
+          state.score += bonus;
+          state.combo += 1;
+          state.maxCombo = Math.max(state.maxCombo, state.combo);
+          state.servedCount += 1;
+          if (!state.orders.length) state.orders.push(generateOrder());
+          showToast(`整份訂單完成 +$${bonus}！`);
+        } else {
+          showToast(`已送出「${order.name}」其中一項，還差 ${order.requiredParts.length} 項！`);
+        }
       } else {
         state.combo = 1;
         spawnBurstParticles(fx, fy, '#EF4444', 8);
-        showToast('漢堡層疊順序與訂單不符，連擊歸零');
+        showToast('送出的餐點或順序與目前訂單不符，連擊歸零');
       }
 
       if (state.score > state.bestScore) {
@@ -2231,17 +2347,31 @@
 
         if (state.mySlotId === 'p1') {
           for (const st of state.stations) {
-            if (st.type !== 'grill' || !st.meatStatus || st.meatStatus === 'burnt_meat') continue;
-            if (st.meatStatus === 'raw_meat') {
-              st.cookProgress = Math.min(100, st.cookProgress + dt * 25);
-              if (st.cookProgress >= 100) {
-                st.meatStatus = 'patty';
-                st.overcookSec = 0;
+            if (st.type === 'grill' && st.meatStatus && st.meatStatus !== 'burnt_meat') {
+              if (st.meatStatus === 'raw_meat') {
+                st.cookProgress = Math.min(100, st.cookProgress + dt * 25);
+                if (st.cookProgress >= 100) {
+                  st.meatStatus = 'patty';
+                  st.overcookSec = 0;
+                }
+              } else if (st.meatStatus === 'patty') {
+                st.overcookSec += dt;
+                if (st.overcookSec >= 10) {
+                  st.meatStatus = 'burnt_meat';
+                }
               }
-            } else if (st.meatStatus === 'patty') {
-              st.overcookSec += dt;
-              if (st.overcookSec >= 10) {
-                st.meatStatus = 'burnt_meat';
+            } else if (st.type === 'dispenser' && st.drinkStatus && st.drinkStatus !== 'burnt_cola') {
+              if (st.drinkStatus === 'filling') {
+                st.fillProgress = Math.min(100, st.fillProgress + dt * 45);
+                if (st.fillProgress >= 100) {
+                  st.drinkStatus = 'ready';
+                  st.overfillSec = 0;
+                }
+              } else if (st.drinkStatus === 'ready') {
+                st.overfillSec += dt;
+                if (st.overfillSec >= 12) {
+                  st.drinkStatus = 'burnt_cola';
+                }
               }
             }
           }
@@ -2386,6 +2516,33 @@
         ctx.beginPath();
         ctx.ellipse(0, -7, 3.5, 1.6, 0, 0, Math.PI * 2);
         ctx.fill();
+      } else if (key === 'frozen_fries' || key === 'fries') {
+        const isFries = key === 'fries';
+        ctx.fillStyle = isFries ? '#FACC15' : '#93C5FD';
+        ctx.fillRect(-7, -11, 3.5, 9);
+        ctx.fillRect(-1.5, -12, 3.5, 10);
+        ctx.fillRect(4, -10.5, 3.5, 8.5);
+        ctx.fillStyle = isFries ? '#E63946' : '#3B82F6';
+        ctx.beginPath();
+        ctx.moveTo(-9, -3);
+        ctx.lineTo(9, -3);
+        ctx.lineTo(7, 9);
+        ctx.lineTo(-7, 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (key === 'cola' || key === 'burnt_cola') {
+        ctx.fillStyle = key === 'cola' ? '#451A03' : '#3F3F46';
+        ctx.beginPath();
+        ctx.moveTo(-8, -8);
+        ctx.lineTo(8, -8);
+        ctx.lineTo(6.5, 9);
+        ctx.lineTo(-6.5, 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = key === 'cola' ? '#EF4444' : '#A1A1AA';
+        ctx.fillRect(-9, -9.5, 18, 3);
       }
 
       ctx.restore();
@@ -2579,7 +2736,7 @@
         ctx.font = 'bold 11px sans-serif';
         ctx.fillStyle = '#1A1A1A';
         ctx.textAlign = 'center';
-        const lbl = fi.payload.kind === 'single' ? ITEM_LABELS[fi.payload.item] : `漢堡(${fi.payload.items.length}層)`;
+        const lbl = fi.payload.kind === 'single' ? ITEM_LABELS[fi.payload.item] : (fi.payload.kind === 'fries' ? '炸薯條' : (fi.payload.kind === 'cola' ? '冰涼可樂' : `漢堡(${fi.payload.items.length}層)`));
         ctx.fillText(lbl, fi.x, fi.y + 23);
         ctx.restore();
       }
@@ -2705,6 +2862,43 @@
             ctx.fillStyle = '#1A1A1A';
             ctx.fillText(ITEM_LABELS[st.item], st.x + st.w / 2, st.y + 70);
           }
+        } else if (st.type === 'freezer') {
+          drawItemMini(ctx, 'frozen_fries', st.x + st.w / 2, st.y + 42, 1.05);
+          ctx.fillStyle = '#2563EB';
+          ctx.fillText('拿冷凍薯條', st.x + st.w / 2, st.y + 70);
+        } else if (st.type === 'fryer') {
+          if (!st.item) {
+            ctx.fillStyle = '#6B7280';
+            ctx.fillText('放冷凍薯條炸', st.x + st.w / 2, st.y + 58);
+          } else if (st.item === 'frozen_fries') {
+            drawItemMini(ctx, 'frozen_fries', st.x + st.w / 2, st.y + 45, 1.05);
+            ctx.fillText(`油炸 ${st.friesProgress}/2`, st.x + st.w / 2, st.y + 78);
+          } else {
+            drawItemMini(ctx, 'fries', st.x + st.w / 2, st.y + 45, 1.08);
+            ctx.fillStyle = '#15803D';
+            ctx.fillText('炸好可端走', st.x + st.w / 2, st.y + 78);
+          }
+        } else if (st.type === 'dispenser') {
+          if (!st.drinkStatus) {
+            ctx.fillStyle = '#2563EB';
+            ctx.fillText('點擊裝可樂', st.x + st.w / 2, st.y + 54);
+          } else if (st.drinkStatus === 'filling') {
+            drawItemMini(ctx, 'cola', st.x + st.w / 2, st.y + 40, 0.98);
+            ctx.fillStyle = '#B45309';
+            ctx.fillText(`裝填 ${Math.floor(st.fillProgress)}%`, st.x + st.w / 2, st.y + 62);
+            ctx.fillStyle = '#E5E7EB';
+            ctx.fillRect(st.x + 14, st.y + 68, st.w - 28, 6);
+            ctx.fillStyle = '#3B82F6';
+            ctx.fillRect(st.x + 14, st.y + 68, ((st.w - 28) * st.fillProgress) / 100, 6);
+          } else if (st.drinkStatus === 'ready') {
+            drawItemMini(ctx, 'cola', st.x + st.w / 2, st.y + 40, 1.02);
+            ctx.fillStyle = '#15803D';
+            ctx.fillText('可端去輸送帶', st.x + st.w / 2, st.y + 66);
+          } else {
+            drawItemMini(ctx, 'burnt_cola', st.x + st.w / 2, st.y + 40, 1.02);
+            ctx.fillStyle = '#DC2626';
+            ctx.fillText('變質請丟棄', st.x + st.w / 2, st.y + 66);
+          }
         } else if (st.type === 'trash') {
           ctx.fillStyle = '#DC2626';
           ctx.fillText('丟棄手上物', st.x + st.w / 2, st.y + 56);
@@ -2801,11 +2995,11 @@
 
     function openHelpModal() {
       openModal(`
-        <h3 style="margin-top:0;">Crazy COOK V2.7 操作說明</h3>
+        <h3 style="margin-top:0;">Crazy COOK V2.9 操作說明</h3>
         <ol style="padding-left:20px;font-weight:700;line-height:1.7;">
-          <li><strong>自選 2～4 人房間：</strong>在多人連線大廳選擇「2 人房 / 3 人房 / 4 人房」後建立房號，滿員且全員按「準備」後由房主按「開始營業！」。</li>
-          <li><strong>圖示化製作流程：</strong>上方訂單卡已改用與下方食材相同的圖示呈現堆疊順序，依序把對應食材疊上組裝台並送到輸送帶出餐。</li>
-          <li><strong>Render WebSocket 同步：</strong>透過 WebSocket 房間中繼同步 2～4 人準備狀態、即時走位與軌跡，結算時全體同步顯示成績單。</li>
+          <li><strong>120 分鐘馬拉松：</strong>單局時間延長至 120 分鐘（<code>120:00</code>），方便多人分工製作漢堡、炸薯條、可樂與套餐。</li>
+          <li><strong>炸薯條與冰涼可樂：</strong>從「冷凍櫃」拿薯條到「油炸機」炸 2 下完成；或點擊「飲料機」等裝填完成後端可樂，再送去「送餐輸送帶」出餐。</li>
+          <li><strong>單點與套餐組合：</strong>訂單會以圖示顯示單點或套餐組合，依序把對應餐點送到輸送帶即可完成。</li>
         </ol>
         <div style="text-align:right;margin-top:14px;">
           <button class="btn btn-mint" onclick="closeModal()">知道了</button>
