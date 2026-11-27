@@ -1758,6 +1758,7 @@
 
     function setupKitchen() {
       if (state.mapId === 'beach') {
+        // 海灘小站：西瓜汁（同可樂做法）、刨冰（同薯條做法＋擇一果醬：草莓粉/哈密瓜淺綠/蘇打淺藍）、熱狗（同煎肉排做法＋番茄醬/芥末醬可擇一或同時）
         state.stations = [
           { id: 'crate_hotdog_bun', type: 'crate', item: 'hotdog_bun', label: '熱狗麵包箱', x: 165, y: 20, w: 96, h: 66 },
           { id: 'crate_raw_hotdog', type: 'crate', item: 'raw_hotdog', label: '熱狗儲藏箱', x: 267, y: 20, w: 96, h: 66 },
@@ -3058,6 +3059,7 @@
         ctx.fillStyle = '#22C55E';
         ctx.fillRect(-9, -9.5, 18, 3);
       } else if (key === 'shaved_ice') {
+        // 綿密雪花刨冰圓頂＋海灘刨冰碗
         ctx.fillStyle = '#F0F9FF';
         ctx.beginPath();
         ctx.arc(0, -1, 10.5, Math.PI, 0);
@@ -3436,16 +3438,16 @@
           if (!st.meatStatus) {
             ctx.fillStyle = '#6B7280';
             ctx.fillText(state.mapId === 'beach' ? '放生熱狗' : '放生肉排', st.x + st.w / 2, st.y + 55);
-          } else if (st.meatStatus === 'raw_meat') {
-            drawItemMini(ctx, 'raw_meat', st.x + st.w / 2, st.y + 42, 1.08);
+          } else if (st.meatStatus === 'raw_meat' || st.meatStatus === 'raw_hotdog') {
+            drawItemMini(ctx, st.meatStatus, st.x + st.w / 2, st.y + 42, 1.08);
             ctx.fillStyle = '#B45309';
             ctx.fillText(`煎製 ${Math.floor(st.cookProgress)}%`, st.x + st.w / 2, st.y + 67);
             ctx.fillStyle = '#E5E7EB';
             ctx.fillRect(st.x + 14, st.y + 74, st.w - 28, 7);
             ctx.fillStyle = '#F59E0B';
             ctx.fillRect(st.x + 14, st.y + 74, ((st.w - 28) * st.cookProgress) / 100, 7);
-          } else if (st.meatStatus === 'patty') {
-            drawItemMini(ctx, 'patty', st.x + st.w / 2, st.y + 42, 1.08);
+          } else if (st.meatStatus === 'patty' || st.meatStatus === 'cooked_hotdog') {
+            drawItemMini(ctx, st.meatStatus, st.x + st.w / 2, st.y + 42, 1.08);
             const left = Math.max(0, 10 - st.overcookSec).toFixed(1);
             const pct = Math.max(0, (10 - st.overcookSec) / 10);
             ctx.fillStyle = st.overcookSec >= 6.5 ? '#DC2626' : '#15803D';
